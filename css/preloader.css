@@ -11,7 +11,7 @@
   }
   
   #progress-bar-container {
-    width: 80%;
+    width: 80%;           
     height: 20px;
     background: #e6f4ea; /* 浅绿色背景 */
     border-radius: 10px;

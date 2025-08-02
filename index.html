@@ -9,110 +9,43 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <link rel="shortcut icon" type="image/favicon.png" href="image/favicon.png">
     <link rel="stylesheet" href="css/preloader.css">
+    <link rel="stylesheet" href="css/style.css">
     <title>manoong 独处工作间^_^</title>
 </head>
 <body>
-    <div id="preloader">
-        <div id="loading-text">0%</div>
-        <div id="progress-bar-container">
-          <div id="progress-bar"></div>
-        </div>
+   <div id="preloader">
+      <div id="loading-text">0%</div>
+      <div id="progress-bar-container">
+         <div id="progress-bar"></div>
+      </div>
+   </div>
+
+   <div class="navbar">
+      <a href="#part1">归居处</a>
+      <a href="#part2">笔耕录</a>
+      <a href="#part3">修习志</a>
+      <a href="#part4">纳宝阁</a>
+      <a href="#part5">赠云笺</a>
+      <a href="#part6">修缮记</a>
+   </div>
+   
+   <div id="progress-switcher">
+      <button data-type="year" class="active">年历程</button>
+      <button data-type="month">月历程</button>
+      <button data-type="week">周历程</button>
+      <button data-type="day">日历程</button>
+   </div>
+
+   <div id="progress-container">
+      <div id="progress-bar"></div>
+      <div id="progress-arrow">
+         <svg t="1754123577148" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" 
+         p-id="1654" width="200" height="200"><path d="M381.952 144.896a126.976 126.976 0 1 0 253.952 0 126.976 126.976 0 1 0-253.952 0zM218.112 743.424L509.44 596.992l289.28 147.456c45.568-16.896 35.84-72.704 35.84-72.704L800.768 529.92c-22.016-92.16-53.248-132.096-53.248-132.096-35.84-55.808-98.304-93.184-169.472-93.184H440.32c-71.168 0-133.632 37.376-169.472 93.184S239.616 437.76 217.6 529.92l-33.792 141.824c0-0.512-9.728 53.76 34.304 71.68z m53.248-170.496l142.848-70.144 29.184-69.632c1.024-4.096 10.752-32.256 33.28-36.864 7.68-1.536 19.456-0.512 32.256 11.776 12.8-12.288 24.576-13.312 32.256-11.776 22.016 4.608 31.744 32.256 33.792 37.888l28.672 68.096 142.848 70.144c7.168 3.584 10.24 12.288 6.656 19.968-2.56 5.12-7.68 8.192-13.312 8.192-2.048 0-4.608-0.512-6.656-1.536l-147.456-71.68c-3.072-1.536-5.632-4.096-7.168-7.68l-31.232-74.752c-3.072-10.24-9.216-18.944-11.776-19.456-0.512 0-3.584 1.024-7.68 6.144-4.608 5.632-12.288 6.144-18.432 2.56-6.144 3.584-13.824 2.56-18.432-2.56-4.608-5.12-7.168-6.144-7.68-6.144-2.56 0.512-8.704 9.216-11.264 17.92l-31.744 75.776c-1.536 3.072-4.096 6.144-7.168 7.68l-147.968 72.704c-2.048 1.024-4.096 1.536-6.656 1.536-5.632 0-10.752-3.072-13.312-8.192-4.608-7.168-1.536-16.384 6.144-19.968z" fill="#040000" p-id="1655"></path><path d="M899.072 853.504L690.176 778.24v-56.32l-181.248-92.16-181.248 91.136v57.344l-208.384 75.264h1.024c-30.208 10.752-51.712 39.424-51.712 72.704v2.048c0 42.496 34.816 77.312 77.312 77.312h726.528c42.496 0 77.312-34.816 77.312-77.312v-2.048c0-33.28-21.504-61.952-50.688-72.704z" fill="#040000" p-id="1656"></path></svg>
+      </div>
+      <div id="progress-percentage"></div>
     </div>
-    <svg
-   width="50mm"
-   height="50mm"
-   viewBox="0 0 30 30"
-   version="1.1"
-   id="svg1"
-   xmlns="http://www.w3.org/2000/svg"
-   xmlns:svg="http://www.w3.org/2000/svg">
-  <defs
-     id="defs1" />
-  <ellipse
-     style="fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0.330975"
-     id="path2"
-     cx="7.551918"
-     cy="4.8172512"
-     rx="7.3864307"
-     ry="1.689993" />
-  <ellipse
-     style="fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0.341129"
-     id="path3"
-     cx="7.551918"
-     cy="2.5773027"
-     rx="4.1741729"
-     ry="2.4067383" />
-  <ellipse
-     style="fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0.35269"
-     id="path4"
-     cx="7.551918"
-     cy="6.4963856"
-     rx="4.0943308"
-     ry="3.910316" />
-  <rect
-     style="display:inline;fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:0.35269"
-     id="rect5"
-     width="14.675186"
-     height="8.5566912"
-     x="0.21432534"
-     y="7.968504"
-     rx="0"
-     ry="1.7481413" />
-  <path
-     style="fill:#ff0000;fill-opacity:1;stroke:#000000;stroke-width:0.0883895;stroke-dasharray:none;stroke-opacity:1"
-     d="M 5.4067321,6.7878573 C 5.6618854,6.7295319 6.4982193,7.1053856 6.6612283,7.3516336 6.8242374,7.5978824 6.3139419,7.714524 5.8957712,7.5265929 5.4776006,7.3386627 5.1515797,6.8461785 5.4067321,6.7878573 Z"
-     id="path13" />
-  <text
-     xml:space="preserve"
-     style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:condensed;font-size:7.0203px;font-family:'Agency FB';-inkscape-font-specification:'Agency FB Condensed';text-align:start;writing-mode:lr-tb;direction:ltr;text-anchor:start;display:inline;fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0.0765386;stroke-dasharray:none;stroke-opacity:1"
-     x="0.97308248"
-     y="13.651151"
-     id="text66"
-     transform="scale(0.94803112,1.0548177)"><tspan
-       id="tspan66"
-       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:condensed;font-size:7.0203px;font-family:'Agency FB';-inkscape-font-specification:'Agency FB Condensed';writing-mode:lr-tb;fill:#000000;stroke-width:0.0765387"
-       x="0.97308248"
-       y="13.651151">wasim</tspan></text>
-  <path
-     style="fill:#ff0000;fill-opacity:1;stroke:#000000;stroke-width:0.0883895;stroke-dasharray:none;stroke-opacity:1"
-     d="M 9.6386839,6.8170653 C 9.3835306,6.7587399 8.5471967,7.1345936 8.3841877,7.3808416 8.2211786,7.6270904 8.7314741,7.743732 9.1496448,7.5558009 9.5678154,7.3678707 9.8938363,6.8753865 9.6386839,6.8170653 Z"
-     id="path66" />
-    </svg>
-    <h1>网站还在施工中...</h1>
-    <script>
-const messages = [
-  "记得微笑",
-  "wasim正尝试加速网络",
-  "一蓑烟雨任平生",
-  "等待是网速最纯情的告白",
-  "注意照顾好自己的身体和心情",
-  "放轻松，人生只是一场体验"
-];
-let progress = 0; 
-const loadingText = document.getElementById('loading-text');
-const progressBar = document.getElementById('progress-bar');
-const preloader = document.getElementById('preloader');
-
-const interval = setInterval(() => {
-  progress += Math.random() * 10;
-  if (progress > 95) progress = 95;
-
-  // 从 messages 数组随机选一句话
-  const randomMsg = messages[Math.floor(Math.random() * messages.length)];
-
-  loadingText.textContent = `${randomMsg} ${Math.floor(progress)}%`;
-  progressBar.style.width = progress + '%';
-}, 1000);
-
-window.addEventListener('load', () => {
-  clearInterval(interval);
-  loadingText.textContent = `沉潜静心`;
-  progressBar.style.width = '100%';
-
-  setTimeout(() => {
-    preloader.style.display = 'none';
-  }, 500);
-});
-    </script>
+    
+   <script src="js/preloader.js"></script>
+   <script src="js/progress.js"></script>
 </body>
 </html>
