@@ -13,39 +13,92 @@
     <title>manoong 独处工作间^_^</title>
 </head>
 <body>
+   <!-- 页面刷新 -->
    <div id="preloader">
       <div id="loading-text">0%</div>
       <div id="progress-bar-container">
          <div id="progress-bar"></div>
       </div>
    </div>
-
-   <div class="navbar">
-      <a href="#part1">归居处</a>
-      <a href="#part2">笔耕录</a>
-      <a href="#part3">修习志</a>
-      <a href="#part4">纳宝阁</a>
-      <a href="#part5">赠云笺</a>
-      <a href="#part6">修缮记</a>
-   </div>
+   <!-- 页面刷新 -->
    
+   <!-- 索引 -->
+   <div class="navbar">
+      <a href="index.html" class="nav-link" id="nav-index">归居处</a>
+      <a href="note.html" class="nav-link" id="nav-note">笔耕录</a>
+      <a href="study.html" class="nav-link" id="nav-study">修习志</a>
+      <a href="treasure.html" class="nav-link" id="nav-treasure">纳宝阁</a>
+      <a href="letter.html" class="nav-link" id="nav-letter">赠云笺</a>
+      <a href="log.html" class="nav-link" id="nav-log">修缮记</a>
+      <div id="progress-percentage">进度: <span id="progress-number">0%</span></div>
+   </div>
+   <!-- 索引 -->
+   
+   <!-- 按钮 -->
    <div id="progress-switcher">
       <button data-type="year" class="active">年历程</button>
       <button data-type="month">月历程</button>
       <button data-type="week">周历程</button>
       <button data-type="day">日历程</button>
    </div>
+   <!-- 按钮 -->
 
+   <!-- 背景图修改 -->
    <div id="progress-container">
       <div id="progress-bar"></div>
       <div id="progress-arrow">
          <svg t="1754123577148" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" 
          p-id="1654" width="200" height="200"><path d="M381.952 144.896a126.976 126.976 0 1 0 253.952 0 126.976 126.976 0 1 0-253.952 0zM218.112 743.424L509.44 596.992l289.28 147.456c45.568-16.896 35.84-72.704 35.84-72.704L800.768 529.92c-22.016-92.16-53.248-132.096-53.248-132.096-35.84-55.808-98.304-93.184-169.472-93.184H440.32c-71.168 0-133.632 37.376-169.472 93.184S239.616 437.76 217.6 529.92l-33.792 141.824c0-0.512-9.728 53.76 34.304 71.68z m53.248-170.496l142.848-70.144 29.184-69.632c1.024-4.096 10.752-32.256 33.28-36.864 7.68-1.536 19.456-0.512 32.256 11.776 12.8-12.288 24.576-13.312 32.256-11.776 22.016 4.608 31.744 32.256 33.792 37.888l28.672 68.096 142.848 70.144c7.168 3.584 10.24 12.288 6.656 19.968-2.56 5.12-7.68 8.192-13.312 8.192-2.048 0-4.608-0.512-6.656-1.536l-147.456-71.68c-3.072-1.536-5.632-4.096-7.168-7.68l-31.232-74.752c-3.072-10.24-9.216-18.944-11.776-19.456-0.512 0-3.584 1.024-7.68 6.144-4.608 5.632-12.288 6.144-18.432 2.56-6.144 3.584-13.824 2.56-18.432-2.56-4.608-5.12-7.168-6.144-7.68-6.144-2.56 0.512-8.704 9.216-11.264 17.92l-31.744 75.776c-1.536 3.072-4.096 6.144-7.168 7.68l-147.968 72.704c-2.048 1.024-4.096 1.536-6.656 1.536-5.632 0-10.752-3.072-13.312-8.192-4.608-7.168-1.536-16.384 6.144-19.968z" fill="#040000" p-id="1655"></path><path d="M899.072 853.504L690.176 778.24v-56.32l-181.248-92.16-181.248 91.136v57.344l-208.384 75.264h1.024c-30.208 10.752-51.712 39.424-51.712 72.704v2.048c0 42.496 34.816 77.312 77.312 77.312h726.528c42.496 0 77.312-34.816 77.312-77.312v-2.048c0-33.28-21.504-61.952-50.688-72.704z" fill="#040000" p-id="1656"></path></svg>
       </div>
-      <div id="progress-percentage"></div>
-    </div>
+   </div>
+
+   <div class="upload-container">
+      <label for="bg-upload" class="upload-label">易图</label>
+      <input type="file" id="bg-upload" accept="image/*" />
     
+      <!-- 折叠面板，默认隐藏 -->
+      <div id="controls-panel" class="controls-panel hidden">
+        <button id="toggle-controls" class="toggle-btn">精调▼</button>
+        <div id="controls-content" class="controls-content">
+          <div class="slider-group">
+            <label>模糊度</label>
+            <input type="range" id="blur-slider" min="0" max="10" step="0.5" value="0">
+          </div>
+          <div class="slider-group">
+            <label>透明度</label>
+            <input type="range" id="opacity-slider" min="0" max="1" step="0.05" value="1">
+          </div>
+          <button id="clear-bg" class="clear-btn">清除背景</button>
+        </div>
+      </div>
+   </div>
+   <!-- 背景图修改 -->
+
+   <!-- 矩形功能块 -->
+   <div class="card-container">
+      <div class="card card1">
+        <div class="icon">🔛</div>
+        <h2><a href="start.html" class="grid-item">破冰</a></h2>
+        <p>想做一件事时，不必等到“状态来了”再开始。只要跨过一开始的那道心理障碍，哪怕只是动手几分钟，也能让你更快进入状态，逐渐专注，减少拖延。</p>
+      </div>
+  
+      <div class="card card2">
+        <div class="icon">🗡</div>
+        <h2><a href="goals.html" class="grid-item">令决</a></h2>
+        <p>按优先级设定清晰的目标，帮助你理清思路，专注重要事务。将大目标拆解为小任务，一步步达成，更能带来成就感和动力。</p>
+      </div>
+  
+      <div class="card card3">
+        <div class="icon">🎮</div>
+        <h2><a href="rest.html" class="grid-item">小憩</a></h2>
+        <p>在忙碌的学习和工作间隙，给自己一段短暂的休息时间。闭目养神或轻松放松，帮助身心恢复活力，让接下来的时间更高效。</p>
+      </div>
+   </div> 
+   <!-- 矩形功能块 -->
+      
    <script src="js/preloader.js"></script>
    <script src="js/progress.js"></script>
+   <script src="js/jump.js"></script>
+   <script src="js/fileupload.js"></script>
 </body>
 </html>

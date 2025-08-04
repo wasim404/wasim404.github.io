@@ -36,8 +36,8 @@ const progressCalculators = {
   function updateProgress(type = 'year') {
     const bar = document.getElementById("progress-bar");
     const arrow = document.getElementById("progress-arrow");
-    const percentageText = document.getElementById("progress-percentage");
-    if (!bar || !arrow || !percentageText) return;
+    const numberSpan = document.getElementById("progress-number");
+    if (!bar || !arrow || !numberSpan) return;
   
     const progress = progressCalculators[type]();
     const progressClamped = Math.min(Math.max(progress, 0), 100);
@@ -45,8 +45,9 @@ const progressCalculators = {
   
     bar.style.width = progressPercent;
     arrow.style.left = progressPercent;
-    percentageText.textContent = progressPercent;
+    numberSpan.textContent = progressPercent;
   }
+  
   
   let currentType = 'year';   // 当前显示类型
   let updateInterval = null;  // 定时器句柄
