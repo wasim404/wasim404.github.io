@@ -1,42 +1,806 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Calendar from '../calendar/Calendar'
+import './SchedulePage.css'
+
+const TASKS_STORAGE_KEY = 'manoong-schedule-tasks'
+const DAILY_STATS_KEY = 'manoong-daily-stats'
+const TIME_WHEEL_ROW_HEIGHT = 40
+
+const padNumber = (number) => String(number).padStart(2, '0')
+
+function dateKey(date) {
+  return `${date.getFullYear()}-${padNumber(date.getMonth() + 1)}-${padNumber(date.getDate())}`
+}
+
+function startOfDay(date) {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate())
+}
+
+function formatDateTitle(date) {
+  const today = new Date()
+  const tomorrow = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1)
+  const prefix =
+    dateKey(date) === dateKey(today)
+      ? '今天'
+      : dateKey(date) === dateKey(tomorrow)
+        ? '明天'
+        : ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][date.getDay()]
+
+  return `${prefix}，${date.getMonth() + 1} 月 ${date.getDate()} 日`
+}
+
+function formatMinutes(seconds = 0) {
+  const minutes = Math.floor(seconds / 60)
+  if (minutes < 60) return `${minutes} 分钟`
+  const hours = Math.floor(minutes / 60)
+  const remainder = minutes % 60
+  return remainder ? `${hours} 小时 ${remainder} 分` : `${hours} 小时`
+}
+
+function readJson(key, fallback) {
+  try {
+    const value = JSON.parse(localStorage.getItem(key) || '')
+    return value ?? fallback
+  } catch {
+    return fallback
+  }
+}
+
+function normalizeTask(task, index) {
+  const start = new Date(task.start)
+  const validStart = !Number.isNaN(start.getTime())
+  const createdAt =
+    task.createdAt ||
+    (validStart ? task.start : new Date(Date.now() + index).toISOString())
+
+  return {
+    ...task,
+    // Older tasks may span several dates, so keep them range-based.
+    date: task.date || null,
+    hasTime: task.hasTime !== false,
+    createdAt,
+    completed: Boolean(task.completed),
+    completedAt: task.completedAt || null,
+  }
+}
+
+function readStoredTasks() {
+  const tasks = readJson(TASKS_STORAGE_KEY, [])
+  return Array.isArray(tasks)
+    ? tasks.map((task, index) => normalizeTask(task, index))
+    : []
+}
+
+function taskOccursOnDate(task, date) {
+  if (task.date) return task.date === dateKey(date)
+
+  const day = startOfDay(date).getTime()
+  const start = startOfDay(new Date(task.start)).getTime()
+  const end = startOfDay(new Date(task.end)).getTime()
+  return day >= start && day <= end
+}
+
+function taskStartValue(task) {
+  const value = new Date(task.start).getTime()
+  return Number.isNaN(value) ? Number.MAX_SAFE_INTEGER : value
+}
+
+function taskTimeLabel(task) {
+  const start = new Date(task.start)
+  const end = new Date(task.end)
+  return `${padNumber(start.getHours())}:${padNumber(start.getMinutes())} — ${padNumber(end.getHours())}:${padNumber(end.getMinutes())}`
+}
+
+function TimeWheelColumn({ label, value, max, onChange }) {
+  const options = useMemo(
+    () => Array.from({ length: max }, (_, index) => index),
+    [max],
+  )
+  const scrollRef = useRef(null)
+  const scrollTimerRef = useRef(null)
+  const keyboardRef = useRef({ key: null, repeats: 0 })
+  const dragRef = useRef({
+    active: false,
+    pointerId: null,
+    startY: 0,
+    startScrollTop: 0,
+    moved: false,
+  })
+
+  useEffect(() => {
+    if (!scrollRef.current) return
+    const expectedTop = value * TIME_WHEEL_ROW_HEIGHT
+    if (Math.abs(scrollRef.current.scrollTop - expectedTop) > 1) {
+      scrollRef.current.scrollTo({ top: expectedTop, behavior: 'smooth' })
+    }
+  }, [value])
+
+  useEffect(
+    () => () => {
+      window.clearTimeout(scrollTimerRef.current)
+    },
+    [],
+  )
+
+  function selectClosest(element) {
+    const index = Math.max(
+      0,
+      Math.min(max - 1, Math.round(element.scrollTop / TIME_WHEEL_ROW_HEIGHT)),
+    )
+    element.scrollTo({
+      top: index * TIME_WHEEL_ROW_HEIGHT,
+      behavior: 'smooth',
+    })
+    if (index !== value) onChange(index)
+  }
+
+  function handleScroll(event) {
+    if (dragRef.current.active) return
+    window.clearTimeout(scrollTimerRef.current)
+    const element = event.currentTarget
+    scrollTimerRef.current = window.setTimeout(() => {
+      selectClosest(element)
+    }, 70)
+  }
+
+  function handlePointerDown(event) {
+    if (event.pointerType === 'mouse' && event.button !== 0) return
+    window.clearTimeout(scrollTimerRef.current)
+    dragRef.current = {
+      active: true,
+      pointerId: event.pointerId,
+      startY: event.clientY,
+      startScrollTop: event.currentTarget.scrollTop,
+      moved: false,
+    }
+    event.currentTarget.setPointerCapture(event.pointerId)
+  }
+
+  function handlePointerMove(event) {
+    const drag = dragRef.current
+    if (!drag.active || drag.pointerId !== event.pointerId) return
+    const distance = event.clientY - drag.startY
+    if (Math.abs(distance) > 2) drag.moved = true
+    event.currentTarget.scrollTop = drag.startScrollTop - distance
+    event.preventDefault()
+  }
+
+  function finishPointerDrag(event) {
+    const drag = dragRef.current
+    if (!drag.active || drag.pointerId !== event.pointerId) return
+    drag.active = false
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId)
+    }
+    selectClosest(event.currentTarget)
+  }
+
+  function handleKeyDown(event) {
+    if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return
+    event.preventDefault()
+
+    const keyboard = keyboardRef.current
+    if (keyboard.key !== event.key) {
+      keyboard.key = event.key
+      keyboard.repeats = 0
+    } else if (event.repeat) {
+      keyboard.repeats += 1
+    }
+
+    const fastStep =
+      keyboard.repeats > 24
+        ? max === 60
+          ? 10
+          : 3
+        : keyboard.repeats > 9
+          ? max === 60
+            ? 5
+            : 2
+          : 1
+    const direction = event.key === 'ArrowDown' ? 1 : -1
+    onChange(Math.max(0, Math.min(max - 1, value + direction * fastStep)))
+  }
+
+  function resetKeyboardAcceleration() {
+    keyboardRef.current = { key: null, repeats: 0 }
+  }
+
+  return (
+    <div className="time-wheel-column">
+      <span className="time-wheel-column__label">{label}</span>
+      <div className="time-wheel-column__frame">
+        <span className="time-wheel-column__selection" aria-hidden="true" />
+        <div
+          ref={scrollRef}
+          className="time-wheel-column__scroller"
+          tabIndex="0"
+          role="spinbutton"
+          aria-label={`${label}，可滚动、拖动或使用上下方向键`}
+          aria-valuemin="0"
+          aria-valuemax={max - 1}
+          aria-valuenow={value}
+          aria-valuetext={padNumber(value)}
+          onScroll={handleScroll}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={finishPointerDrag}
+          onPointerCancel={finishPointerDrag}
+          onKeyDown={handleKeyDown}
+          onKeyUp={resetKeyboardAcceleration}
+          onBlur={resetKeyboardAcceleration}
+        >
+          <div className="time-wheel-column__spacer" />
+          {options.map((option) => (
+            <button
+              type="button"
+              tabIndex="-1"
+              key={option}
+              className={option === value ? 'is-selected' : ''}
+              onClick={(event) => {
+                if (dragRef.current.moved) {
+                  event.preventDefault()
+                  dragRef.current.moved = false
+                  return
+                }
+                onChange(option)
+              }}
+            >
+              {padNumber(option)}
+            </button>
+          ))}
+          <div className="time-wheel-column__spacer" />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function TimeWheel({ label, value, onChange }) {
+  const [hours, minutes] = value.split(':').map(Number)
+
+  return (
+    <fieldset className="time-wheel">
+      <legend>{label}</legend>
+      <div className="time-wheel__columns">
+        <TimeWheelColumn
+          label="时"
+          value={hours}
+          max={24}
+          onChange={(nextHours) =>
+            onChange(`${padNumber(nextHours)}:${padNumber(minutes)}`)
+          }
+        />
+        <span className="time-wheel__colon" aria-hidden="true">:</span>
+        <TimeWheelColumn
+          label="分"
+          value={minutes}
+          max={60}
+          onChange={(nextMinutes) =>
+            onChange(`${padNumber(hours)}:${padNumber(nextMinutes)}`)
+          }
+        />
+      </div>
+    </fieldset>
+  )
+}
+
+function AddTaskModal({ selectedDate, onClose, onAddTask }) {
+  const [title, setTitle] = useState('')
+  const [hasTime, setHasTime] = useState(false)
+  const [startTime, setStartTime] = useState('09:00')
+  const [endTime, setEndTime] = useState('10:00')
+  const [error, setError] = useState('')
+  const titleInputRef = useRef(null)
+
+  useEffect(() => {
+    titleInputRef.current?.focus()
+
+    function handleKeyDown(event) {
+      if (event.key === 'Escape') onClose()
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    document.body.style.overflow = 'hidden'
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+      document.body.style.overflow = ''
+    }
+  }, [onClose])
+
+  function buildDate(time) {
+    const [hours, minutes] = time.split(':').map(Number)
+    return new Date(
+      selectedDate.getFullYear(),
+      selectedDate.getMonth(),
+      selectedDate.getDate(),
+      hours,
+      minutes,
+      0,
+      0,
+    )
+  }
+
+  function handleSubmit(event) {
+    event.preventDefault()
+    const cleanTitle = title.trim()
+
+    if (!cleanTitle) {
+      setError('请写下要完成的事情')
+      titleInputRef.current?.focus()
+      return
+    }
+
+    const start = hasTime
+      ? buildDate(startTime)
+      : startOfDay(selectedDate)
+    const end = hasTime
+      ? buildDate(endTime)
+      : new Date(
+          selectedDate.getFullYear(),
+          selectedDate.getMonth(),
+          selectedDate.getDate(),
+          23,
+          59,
+          59,
+        )
+
+    if (hasTime && end <= start) {
+      setError('结束时间需要晚于开始时间')
+      return
+    }
+
+    const now = new Date().toISOString()
+    onAddTask({
+      id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      title: cleanTitle,
+      date: dateKey(selectedDate),
+      hasTime,
+      start: start.toISOString(),
+      end: end.toISOString(),
+      createdAt: now,
+      completed: false,
+      completedAt: null,
+    })
+  }
+
+  return (
+    <div
+      className="schedule-modal-backdrop"
+      role="presentation"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose()
+      }}
+    >
+      <form
+        className="schedule-modal"
+        onSubmit={handleSubmit}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="add-task-title"
+      >
+        <header className="schedule-modal__header">
+          <div>
+            <p>NEW TASK · {selectedDate.getMonth() + 1}/{selectedDate.getDate()}</p>
+            <h2 id="add-task-title">安排一件重要的事</h2>
+          </div>
+          <button type="button" onClick={onClose} aria-label="关闭">×</button>
+        </header>
+
+        <label className="schedule-field">
+          <span>任务名称</span>
+          <input
+            ref={titleInputRef}
+            value={title}
+            onChange={(event) => {
+              setTitle(event.target.value)
+              setError('')
+            }}
+            maxLength={80}
+            placeholder="例如：整理项目提案"
+          />
+        </label>
+
+        <div className="time-choice">
+          <button
+            type="button"
+            className={!hasTime ? 'is-active' : ''}
+            onClick={() => {
+              setHasTime(false)
+              setError('')
+            }}
+          >
+            <span>○</span>
+            <strong>灵活安排</strong>
+            <small>不设置具体几点</small>
+          </button>
+          <button
+            type="button"
+            className={hasTime ? 'is-active' : ''}
+            onClick={() => setHasTime(true)}
+          >
+            <span>◷</span>
+            <strong>指定时间</strong>
+            <small>加入当天时间线</small>
+          </button>
+        </div>
+
+        {hasTime && (
+          <div className="schedule-time-wheels">
+            <div className="schedule-time-wheels__head">
+              <strong>具体时间</strong>
+              <span>滚动或拖动 · 聚焦后可用 ↑ ↓</span>
+            </div>
+            <div className="schedule-time-wheels__body">
+              <TimeWheel
+                label="开始"
+                value={startTime}
+                onChange={(nextTime) => {
+                  setStartTime(nextTime)
+                  setError('')
+                }}
+              />
+              <span className="schedule-time-wheels__arrow" aria-hidden="true">→</span>
+              <TimeWheel
+                label="结束"
+                value={endTime}
+                onChange={(nextTime) => {
+                  setEndTime(nextTime)
+                  setError('')
+                }}
+              />
+            </div>
+          </div>
+        )}
+
+        <div className="schedule-modal__error" aria-live="polite">
+          {error && <p>{error}</p>}
+        </div>
+
+        <footer className="schedule-modal__footer">
+          <button type="button" onClick={onClose}>取消</button>
+          <button type="submit">添加到日程 <span>→</span></button>
+        </footer>
+      </form>
+    </div>
+  )
+}
+
+function DeleteTaskModal({ task, onCancel, onConfirm }) {
+  const cancelButtonRef = useRef(null)
+
+  useEffect(() => {
+    cancelButtonRef.current?.focus()
+    function handleKeyDown(event) {
+      if (event.key === 'Escape') onCancel()
+    }
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [onCancel])
+
+  return (
+    <div className="schedule-modal-backdrop">
+      <section className="schedule-delete" role="alertdialog" aria-modal="true">
+        <span className="schedule-delete__icon">×</span>
+        <h2>删除这项任务？</h2>
+        <p>“{task.title}”删除后将无法恢复。</p>
+        <div>
+          <button ref={cancelButtonRef} type="button" onClick={onCancel}>保留任务</button>
+          <button type="button" onClick={onConfirm}>确认删除</button>
+        </div>
+      </section>
+    </div>
+  )
+}
+
+function TaskCheck({ task, onToggle }) {
+  return (
+    <button
+      type="button"
+      className={`task-check ${task.completed ? 'is-complete' : ''}`}
+      aria-label={`${task.completed ? '恢复' : '完成'}任务：${task.title}`}
+      onClick={() => onToggle(task)}
+    >
+      {task.completed ? '✓' : ''}
+    </button>
+  )
+}
 
 function SchedulePage() {
   const [selectedDate, setSelectedDate] = useState(new Date())
+  const [tasks, setTasks] = useState(readStoredTasks)
+  const [dailyStats, setDailyStats] = useState(() =>
+    readJson(DAILY_STATS_KEY, {}),
+  )
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [taskToDelete, setTaskToDelete] = useState(null)
+
+  useEffect(() => {
+    localStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(tasks))
+  }, [tasks])
+
+  const selectedTasks = useMemo(
+    () => tasks.filter((task) => taskOccursOnDate(task, selectedDate)),
+    [selectedDate, tasks],
+  )
+
+  const flexibleTasks = useMemo(
+    () =>
+      selectedTasks
+        .filter((task) => !task.hasTime)
+        .sort(
+          (taskA, taskB) =>
+            new Date(taskA.createdAt).getTime() -
+            new Date(taskB.createdAt).getTime(),
+        ),
+    [selectedTasks],
+  )
+
+  const timedTasks = useMemo(
+    () =>
+      selectedTasks
+        .filter((task) => task.hasTime)
+        .sort(
+          (taskA, taskB) =>
+            taskStartValue(taskA) - taskStartValue(taskB) ||
+            new Date(taskA.createdAt).getTime() -
+              new Date(taskB.createdAt).getTime(),
+        ),
+    [selectedTasks],
+  )
+
+  const completedCount = selectedTasks.filter((task) => task.completed).length
+  const selectedStats = dailyStats[dateKey(selectedDate)] || {}
+  const completionPercent = selectedTasks.length
+    ? Math.round((completedCount / selectedTasks.length) * 100)
+    : 0
+
+  function hasTasksForDate(date) {
+    return tasks.some((task) => taskOccursOnDate(task, date))
+  }
+
+  function addTask(task) {
+    setTasks((currentTasks) => [...currentTasks, task])
+    setIsModalOpen(false)
+  }
+
+  function toggleTask(task) {
+    const nextCompleted = !task.completed
+    const completedAt = nextCompleted ? new Date().toISOString() : null
+
+    setTasks((currentTasks) =>
+      currentTasks.map((currentTask) =>
+        currentTask.id === task.id
+          ? { ...currentTask, completed: nextCompleted, completedAt }
+          : currentTask,
+      ),
+    )
+
+    setDailyStats((currentStats) => {
+      const stats = { ...currentStats }
+      const completionDate = nextCompleted
+        ? new Date()
+        : new Date(task.completedAt || Date.now())
+      const key = dateKey(completionDate)
+      const day = { ...(stats[key] || {}) }
+      const ids = new Set(day.completedTaskIds || [])
+
+      if (nextCompleted) ids.add(task.id)
+      else ids.delete(task.id)
+
+      day.completedTaskIds = [...ids]
+      day.completedCount = ids.size
+      stats[key] = day
+      localStorage.setItem(DAILY_STATS_KEY, JSON.stringify(stats))
+      return stats
+    })
+  }
+
+  function confirmDeleteTask() {
+    if (!taskToDelete) return
+    setTasks((currentTasks) =>
+      currentTasks.filter((task) => task.id !== taskToDelete.id),
+    )
+
+    if (taskToDelete.completedAt) {
+      setDailyStats((currentStats) => {
+        const stats = { ...currentStats }
+        const key = dateKey(new Date(taskToDelete.completedAt))
+        const day = { ...(stats[key] || {}) }
+        day.completedTaskIds = (day.completedTaskIds || []).filter(
+          (id) => id !== taskToDelete.id,
+        )
+        day.completedCount = day.completedTaskIds.length
+        stats[key] = day
+        localStorage.setItem(DAILY_STATS_KEY, JSON.stringify(stats))
+        return stats
+      })
+    }
+    setTaskToDelete(null)
+  }
+
+  function renderFlexibleTask(task, index) {
+    return (
+      <article className={`flex-task ${task.completed ? 'is-complete' : ''}`} key={task.id}>
+        <TaskCheck task={task} onToggle={toggleTask} />
+        <span className="flex-task__order">{padNumber(index + 1)}</span>
+        <div>
+          <h4>{task.title}</h4>
+          <p>{task.completed ? '已完成' : '按创建顺序排列'}</p>
+        </div>
+        <button
+          type="button"
+          className="task-delete"
+          onClick={() => setTaskToDelete(task)}
+          aria-label={`删除任务：${task.title}`}
+        >
+          ×
+        </button>
+      </article>
+    )
+  }
+
+  function renderTimedTask(task) {
+    return (
+      <article className={`timeline-task ${task.completed ? 'is-complete' : ''}`} key={task.id}>
+        <time>{taskTimeLabel(task).split(' — ')[0]}</time>
+        <span className="timeline-task__node" />
+        <div className="timeline-task__card">
+          <TaskCheck task={task} onToggle={toggleTask} />
+          <div>
+            <h4>{task.title}</h4>
+            <p>{taskTimeLabel(task)}</p>
+          </div>
+          <button
+            type="button"
+            className="task-delete"
+            onClick={() => setTaskToDelete(task)}
+            aria-label={`删除任务：${task.title}`}
+          >
+            ×
+          </button>
+        </div>
+      </article>
+    )
+  }
+
   return (
-    <main className="min-h-screen  px-6 pb-8 pt-24">
-      <div className="mx-auto max-w-6xl">
-        {/* 页面标题 */}
-        <header className="mb-8">
-          <h1 className=" text-black text-3xl font-bold">日程安排</h1>
+    <main className="schedule-page">
+      <div className="schedule-shell">
+        <header className="schedule-heading">
+          <div>
+            <p><span /> SCHEDULE</p>
+            <h1>让每一天，<em>清晰发生</em></h1>
+            <small>先放下要做的事，再决定它何时发生。</small>
+          </div>
+          <div className="schedule-heading__actions">
+            <button type="button" onClick={() => setSelectedDate(new Date())}>
+              回到今天
+            </button>
+            <button type="button" onClick={() => setIsModalOpen(true)}>
+              <span>＋</span> 新建任务
+            </button>
+          </div>
         </header>
 
-        {/* 页面主体 */}
-        <div className="grid gap-6 lg:grid-cols-3">
-          {/* 日历区域 */}
-          <section className="rounded-2xl p-6 lg:col-span-2">
-            <h2 className="mb-4 text-xl font-semibold">日历</h2>
+        <section className="schedule-overview">
+          <div>
+            <span>完成进度</span>
+            <strong>{completedCount}<small> / {selectedTasks.length}</small></strong>
+            <div className="schedule-progress">
+              <i style={{ width: `${completionPercent}%` }} />
+            </div>
+          </div>
+          <div>
+            <span>当日专注</span>
+            <strong>{formatMinutes(selectedStats.focusSeconds || 0)}</strong>
+            <small>专注完成后自动累计</small>
+          </div>
+          <p>
+            {selectedTasks.length === 0
+              ? '留白不是浪费，也是一种安排。'
+              : completionPercent === 100
+                ? '今天的任务全部完成，辛苦了。'
+                : `还有 ${selectedTasks.length - completedCount} 件事，慢慢来。`}
+          </p>
+        </section>
 
+        <div className="schedule-workspace">
+          <section className="calendar-panel">
+            <div className="calendar-panel__head">
+              <div>
+                <p>日期导航</p>
+                <h2>选择一天</h2>
+              </div>
+              <span>圆点表示有任务</span>
+            </div>
             <Calendar
+              key={`${selectedDate.getFullYear()}-${selectedDate.getMonth()}`}
               selectedDate={selectedDate}
               onSelectDate={setSelectedDate}
+              hasTasksForDate={hasTasksForDate}
             />
           </section>
 
-          {/* 任务区域 */}
-          <aside className="rounded-2xl bg-slate-900 p-6">
-            <h2 className="mb-4 text-xl font-semibold">{selectedDate.getMonth() + 1} 月 {selectedDate.getDate()} 日任务</h2>
+          <section className="agenda-panel">
+            <header className="agenda-panel__head">
+              <div>
+                <p>DAILY PLAN</p>
+                <h2>{formatDateTitle(selectedDate)}</h2>
+              </div>
+              <span>{selectedTasks.length} 项</span>
+            </header>
 
-            <div className="rounded-xl border border-dashed border-slate-700 p-6 text-center">
-              <p className="text-sm text-slate-500">当前没有任务</p>
+            {selectedTasks.length === 0 ? (
+              <div className="agenda-empty">
+                <span>✦</span>
+                <h3>这一天还没有安排</h3>
+                <p>先添加一件想完成的小事，时间可以稍后再定。</p>
+                <button type="button" onClick={() => setIsModalOpen(true)}>
+                  添加第一项任务
+                </button>
+              </div>
+            ) : (
+              <div className="agenda-content">
+                {flexibleTasks.length > 0 && (
+                  <section className="agenda-group">
+                    <header>
+                      <div>
+                        <span className="agenda-group__icon">∞</span>
+                        <h3>灵活安排</h3>
+                      </div>
+                      <small>未设置具体时间 · 先创建先展示</small>
+                    </header>
+                    <div className="flex-task-list">
+                      {flexibleTasks.map(renderFlexibleTask)}
+                    </div>
+                  </section>
+                )}
 
-              <button className="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-sm transition-colors hover:bg-blue-500">
-                添加任务
-              </button>
-            </div>
-          </aside>
+                {timedTasks.length > 0 && (
+                  <section className="agenda-group agenda-group--timeline">
+                    <header>
+                      <div>
+                        <span className="agenda-group__icon">◷</span>
+                        <h3>时间线</h3>
+                      </div>
+                      <small>按开始时间排列</small>
+                    </header>
+                    <div className="timeline-task-list">
+                      {timedTasks.map(renderTimedTask)}
+                    </div>
+                  </section>
+                )}
+              </div>
+            )}
+          </section>
         </div>
       </div>
+
+      <button
+        type="button"
+        className="schedule-mobile-add"
+        onClick={() => setIsModalOpen(true)}
+        aria-label="新建任务"
+      >
+        ＋
+      </button>
+
+      {isModalOpen && (
+        <AddTaskModal
+          selectedDate={selectedDate}
+          onClose={() => setIsModalOpen(false)}
+          onAddTask={addTask}
+        />
+      )}
+
+      {taskToDelete && (
+        <DeleteTaskModal
+          task={taskToDelete}
+          onCancel={() => setTaskToDelete(null)}
+          onConfirm={confirmDeleteTask}
+        />
+      )}
     </main>
   )
 }

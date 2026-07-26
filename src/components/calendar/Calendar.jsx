@@ -10,22 +10,15 @@ function isSameDate(dateA, dateB) {
   )
 }
 
-function Calendar({ selectedDate, onSelectDate }) {
-  // 控制当前显示哪个月份
+function Calendar({ selectedDate, onSelectDate, hasTasksForDate }) {
   const [currentMonth, setCurrentMonth] = useState(
     new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1),
   )
 
   const year = currentMonth.getFullYear()
   const month = currentMonth.getMonth()
-
-  // 当前月份有多少天
   const daysInMonth = new Date(year, month + 1, 0).getDate()
-
-  // 当前月份第一天是星期几
   const firstDay = new Date(year, month, 1).getDay()
-
-  // 把星期日开头转换为星期一开头
   const emptyDays = (firstDay + 6) % 7
 
   function showPreviousMonth() {
@@ -37,66 +30,76 @@ function Calendar({ selectedDate, onSelectDate }) {
   }
 
   return (
-    <div className="rounded-xl border border-slate-700 p-5">
-      {/* 月份切换栏 */}
-      <div className="mb-6 flex items-center justify-between">
+    <div className="px-1 py-2 sm:px-3">
+      <div className="mb-7 flex items-center justify-between">
         <button
           type="button"
           onClick={showPreviousMonth}
-          className="rounded-lg px-3 py-2 text-slate-400 transition-colors hover:bg-slate-800 hover:text-white"
+          aria-label="上个月"
+          className="grid h-10 w-10 place-items-center rounded-full text-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-900"
         >
-          ←
+          ‹
         </button>
 
-        <h3 className="text-lg font-semibold">
+        <h3 className="text-lg font-semibold tracking-tight text-slate-900">
           {year} 年 {month + 1} 月
         </h3>
 
         <button
           type="button"
           onClick={showNextMonth}
-          className="rounded-lg px-3 py-2 text-slate-400 transition-colors hover:bg-slate-800 hover:text-white"
+          aria-label="下个月"
+          className="grid h-10 w-10 place-items-center rounded-full text-xl text-slate-400 transition hover:bg-slate-100 hover:text-slate-900"
         >
-          →
+          ›
         </button>
       </div>
 
-      {/* 星期标题 */}
       <div className="grid grid-cols-7 gap-2">
         {weekDays.map((day) => (
           <div
             key={day}
-            className="py-2 text-center text-sm text-slate-500"
+            className="py-2 text-center text-sm font-normal text-slate-500"
           >
             周{day}
           </div>
         ))}
 
-        {/* 月份开头的空白格子 */}
         {Array.from({ length: emptyDays }).map((_, index) => (
           <div key={`empty-${index}`} />
         ))}
 
-        {/* 日期按钮 */}
         {Array.from({ length: daysInMonth }).map((_, index) => {
           const day = index + 1
           const date = new Date(year, month, day)
-
           const isSelected = isSameDate(date, selectedDate)
           const isToday = isSameDate(date, new Date())
+          const hasTasks = hasTasksForDate?.(date)
 
           return (
             <button
               key={day}
               type="button"
               onClick={() => onSelectDate(date)}
-              className={`aspect-square rounded-lg text-sm transition-colors ${
+              aria-label={`${year}年${month + 1}月${day}日${hasTasks ? '，有任务' : ''}`}
+              className={`relative aspect-square rounded-xl text-sm font-medium transition-all duration-200 ${
                 isSelected
-                  ? 'bg-blue-600 text-white'
-                  : 'text-slate-300 hover:bg-slate-800'
-              } ${isToday && !isSelected ? 'ring-1 ring-blue-500' : ''}`}
+                  ? 'bg-slate-900 text-white shadow-md shadow-slate-900/20'
+                  : 'text-slate-800 hover:bg-slate-100'
+              } ${
+                isToday && !isSelected
+                  ? 'ring-1 ring-inset ring-blue-500'
+                  : ''
+              }`}
             >
               {day}
+              {hasTasks && (
+                <span
+                  className={`absolute bottom-1.5 left-1/2 h-1 w-1 -translate-x-1/2 rounded-full ${
+                    isSelected ? 'bg-white' : 'bg-blue-500'
+                  }`}
+                />
+              )}
             </button>
           )
         })}

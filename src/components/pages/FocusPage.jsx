@@ -1,5 +1,736 @@
+import { useEffect, useRef, useState } from 'react'
+import './FocusPage.css'
+
+const TASKS_STORAGE_KEY = 'manoong-schedule-tasks'
+const PREFERENCES_STORAGE_KEY = 'manoong-focus-preferences'
+const DAILY_STATS_KEY = 'manoong-daily-stats'
+const MAX_SECONDS = 12 * 60 * 60
+const MIN_SAVED_FOCUS_SECONDS = 5 * 60
+
+const pad = (value) => String(Math.max(0, value)).padStart(2, '0')
+
+function localDateKey(date = new Date()) {
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
+}
+
+function recordFocusTime(totalSeconds) {
+  if (totalSeconds < MIN_SAVED_FOCUS_SECONDS) return
+
+  try {
+    const stats = JSON.parse(localStorage.getItem(DAILY_STATS_KEY) || '{}')
+    const key = localDateKey()
+    const day = { ...(stats[key] || {}) }
+    day.focusSeconds = (Number(day.focusSeconds) || 0) + totalSeconds
+    day.focusSessions = (Number(day.focusSessions) || 0) + 1
+    day.lastFocusedAt = new Date().toISOString()
+    stats[key] = day
+    localStorage.setItem(DAILY_STATS_KEY, JSON.stringify(stats))
+  } catch {
+    // A disabled or full browser store should never prevent ending a session.
+  }
+}
+
+function readTasks() {
+  try {
+    const value = JSON.parse(localStorage.getItem(TASKS_STORAGE_KEY) || '[]')
+    return Array.isArray(value) ? value : []
+  } catch {
+    return []
+  }
+}
+
+function readPreferences() {
+  try {
+    return JSON.parse(localStorage.getItem(PREFERENCES_STORAGE_KEY) || '{}')
+  } catch {
+    return {}
+  }
+}
+
+function formatTaskDate(task) {
+  const date = new Date(task.start)
+  const today = new Date()
+  const isToday =
+    date.getFullYear() === today.getFullYear() &&
+    date.getMonth() === today.getMonth() &&
+    date.getDate() === today.getDate()
+
+  return `${isToday ? '今天' : `${date.getMonth() + 1}月${date.getDate()}日`} · ${pad(date.getHours())}:${pad(date.getMinutes())}`
+}
+
+function FlipPair({ value, label, tick }) {
+  return (
+    <div className="flip-unit" aria-label={`${value}${label}`}>
+      <div className="flip-card">
+        <span className="flip-card__number">{value}</span>
+        <span key={tick} className="flip-card__leaf" aria-hidden="true">
+          {value}
+        </span>
+        <span className="flip-card__shine" aria-hidden="true" />
+      </div>
+      <span className="flip-unit__label">{label}</span>
+    </div>
+  )
+}
+
+function FocusTimer({
+  mode,
+  durationMinutes,
+  task,
+  reminderMinutes,
+  breakMinutes,
+  onFinish,
+}) {
+  const initialSeconds = mode === 'down' ? durationMinutes * 60 : 0
+  const [seconds, setSeconds] = useState(initialSeconds)
+  const [isPaused, setIsPaused] = useState(false)
+  const [showControls, setShowControls] = useState(true)
+  const [showRestPrompt, setShowRestPrompt] = useState(false)
+  const [showStopPrompt, setShowStopPrompt] = useState(false)
+  const [exitSource, setExitSource] = useState('control')
+  const [isResting, setIsResting] = useState(false)
+  const [restSeconds, setRestSeconds] = useState(breakMinutes * 60)
+  const reminderShownRef = useRef(false)
+  const completionTriggeredRef = useRef(false)
+  const hideTimerRef = useRef(null)
+
+  useEffect(() => {
+    document.body.classList.add('focus-session-open')
+    return () => {
+      document.body.classList.remove('focus-session-open')
+      window.clearTimeout(hideTimerRef.current)
+    }
+  }, [])
+
+  useEffect(() => {
+    function addHistoryGuard() {
+      window.history.pushState(
+        { ...window.history.state, manoongFocusGuard: true },
+        '',
+        window.location.href,
+      )
+    }
+
+    function handleBrowserBack() {
+      setExitSource('back')
+      addHistoryGuard()
+      setShowStopPrompt(true)
+    }
+
+    addHistoryGuard()
+    window.addEventListener('popstate', handleBrowserBack)
+    return () => window.removeEventListener('popstate', handleBrowserBack)
+  }, [])
+
+  useEffect(() => {
+    if (isPaused || showRestPrompt || showStopPrompt || isResting) return undefined
+
+    const anchorTime = Date.now()
+    const anchorSeconds = seconds
+
+    function updateFromClock() {
+      const elapsed = Math.floor((Date.now() - anchorTime) / 1000)
+      const next =
+        mode === 'down'
+          ? Math.max(0, anchorSeconds - elapsed)
+          : Math.min(MAX_SECONDS, anchorSeconds + elapsed)
+
+      setSeconds(next)
+
+      if (
+        reminderMinutes > 0 &&
+        !reminderShownRef.current &&
+        (mode === 'up'
+          ? next >= reminderMinutes * 60
+          : initialSeconds - next >= reminderMinutes * 60)
+      ) {
+        reminderShownRef.current = true
+        setShowRestPrompt(true)
+      }
+
+      if (
+        !completionTriggeredRef.current &&
+        ((mode === 'down' && next === 0) ||
+          (mode === 'up' && next === MAX_SECONDS))
+      ) {
+        completionTriggeredRef.current = true
+        onFinish(
+          mode === 'down' ? initialSeconds : next,
+          true,
+          'automatic',
+        )
+      }
+    }
+
+    const timer = window.setInterval(updateFromClock, 200)
+
+    return () => window.clearInterval(timer)
+    // `seconds` is intentionally captured only when a running period begins.
+    // Pausing or opening a dialog starts a new anchor from the latest value.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    initialSeconds,
+    isPaused,
+    isResting,
+    mode,
+    onFinish,
+    reminderMinutes,
+    showRestPrompt,
+    showStopPrompt,
+  ])
+
+  useEffect(() => {
+    if (!isResting) return undefined
+    const timer = window.setInterval(() => {
+      setRestSeconds((current) => {
+        if (current <= 1) {
+          window.setTimeout(() => {
+            setIsResting(false)
+            setRestSeconds(breakMinutes * 60)
+          }, 0)
+          return 0
+        }
+        return current - 1
+      })
+    }, 1000)
+    return () => window.clearInterval(timer)
+  }, [breakMinutes, isResting])
+
+  useEffect(() => {
+    function handleKeyDown(event) {
+      if (event.code === 'Space' && !showRestPrompt && !showStopPrompt) {
+        event.preventDefault()
+        setIsPaused((current) => !current)
+      }
+      if (event.key === 'Escape') {
+        setExitSource('control')
+        setShowStopPrompt(true)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [showRestPrompt, showStopPrompt])
+
+  function revealControls() {
+    setShowControls(true)
+    window.clearTimeout(hideTimerRef.current)
+    hideTimerRef.current = window.setTimeout(() => setShowControls(false), 2600)
+  }
+
+  function requestStop(source = 'control') {
+    setExitSource(source)
+    setShowStopPrompt(true)
+  }
+
+  function continueFocus() {
+    setExitSource('control')
+    setShowStopPrompt(false)
+  }
+
+  const visibleSeconds = isResting ? restSeconds : seconds
+  const elapsedSeconds =
+    mode === 'down' ? initialSeconds - seconds : seconds
+  const isEarlyExit = elapsedSeconds < MIN_SAVED_FOCUS_SECONDS
+  const encouragements = [
+    '有急事吗？没关系，我会在这里等你。',
+    '要不要再坚持一小会儿？五分钟后再回头看看。',
+    '刚开始也算开始。如果可以，再给自己一点进入状态的时间。',
+    '注意力偶尔走开很正常，轻轻把它带回来就好。',
+  ]
+  const encouragement =
+    encouragements[elapsedSeconds % encouragements.length]
+  const hours = pad(Math.floor(visibleSeconds / 3600))
+  const minutes = pad(Math.floor((visibleSeconds % 3600) / 60))
+  const secondValue = pad(visibleSeconds % 60)
+
+  return (
+    <div
+      className={`focus-timer ${showControls ? 'is-awake' : ''}`}
+      onMouseMove={revealControls}
+      onTouchStart={revealControls}
+    >
+      <div className="focus-timer__ambient focus-timer__ambient--one" />
+      <div className="focus-timer__ambient focus-timer__ambient--two" />
+
+      <div className="focus-timer__meta">
+        <span className="focus-timer__pulse" />
+        {isResting
+          ? `休息 ${breakMinutes} 分钟`
+          : task
+            ? task.title
+            : '自由专注'}
+      </div>
+
+      <main className="scoreboard" aria-live="off">
+        <FlipPair value={hours} label="时" tick={visibleSeconds} />
+        <span className="scoreboard__colon" aria-hidden="true">
+          <i />
+          <i />
+        </span>
+        <FlipPair value={minutes} label="分" tick={visibleSeconds} />
+        <span className="scoreboard__colon" aria-hidden="true">
+          <i />
+          <i />
+        </span>
+        <FlipPair value={secondValue} label="秒" tick={visibleSeconds} />
+      </main>
+
+      <p className="focus-timer__state" aria-live="polite">
+        {isResting
+          ? '慢慢呼吸，回来时思路会更清晰'
+          : isPaused
+            ? '已暂停'
+            : mode === 'down'
+              ? '保持当下，时间正在为你倒数'
+              : '不赶时间，只记录投入'}
+      </p>
+
+      <div className="focus-controls" aria-label="计时控制">
+        <button
+          type="button"
+          onClick={() => setIsPaused((current) => !current)}
+          disabled={isResting}
+        >
+          <span>{isPaused ? '▶' : 'Ⅱ'}</span>
+          {isPaused ? '继续' : '暂停'}
+        </button>
+        <span className="focus-controls__line" />
+        <button type="button" onClick={() => requestStop()}>
+          <span>■</span>
+          结束
+        </button>
+      </div>
+
+      <span className="focus-timer__hint">移动光标显示控制 · 空格暂停</span>
+
+      {showRestPrompt && (
+        <div className="focus-dialog-backdrop">
+          <section className="focus-dialog" role="dialog" aria-modal="true">
+            <span className="focus-dialog__icon">☕</span>
+            <p className="focus-dialog__eyebrow">温柔提醒</p>
+            <h2>专注很久了，休息一下吗？</h2>
+            <p>
+              短暂离开屏幕、喝口水，通常比勉强坚持更有效。
+            </p>
+            <div className="focus-dialog__actions">
+              <button
+                className="focus-dialog__primary"
+                type="button"
+                onClick={() => {
+                  setShowRestPrompt(false)
+                  setRestSeconds(breakMinutes * 60)
+                  setIsResting(true)
+                }}
+              >
+                休息 {breakMinutes} 分钟
+              </button>
+              <button type="button" onClick={() => setShowRestPrompt(false)}>
+                暂时不用
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+
+      {showStopPrompt && (
+        <div className="focus-dialog-backdrop">
+          <section
+            className={`focus-dialog focus-dialog--compact ${isEarlyExit ? 'focus-dialog--early' : ''}`}
+            role="dialog"
+            aria-modal="true"
+          >
+            {isEarlyExit && <span className="focus-dialog__early-icon">↗</span>}
+            <p className="focus-dialog__eyebrow">
+              {exitSource === 'back' ? '离开专注模式' : '结束专注'}
+            </p>
+            <h2>
+              {isEarlyExit ? '才刚刚开始，要现在离开吗？' : '要保存这段专注吗？'}
+            </h2>
+            <p>
+              {isEarlyExit
+                ? encouragement
+                : `本次已经专注 ${Math.floor(elapsedSeconds / 60)} 分钟，可以安心收尾了。`}
+            </p>
+
+            {isEarlyExit && (
+              <div className="early-focus-progress">
+                <div>
+                  <span>已专注 {Math.floor(elapsedSeconds / 60)}:{pad(elapsedSeconds % 60)}</span>
+                  <span>5:00 后计入统计</span>
+                </div>
+                <i>
+                  <span
+                    style={{
+                      width: `${Math.min(100, (elapsedSeconds / MIN_SAVED_FOCUS_SECONDS) * 100)}%`,
+                    }}
+                  />
+                </i>
+                <p>不足 5 分钟的专注不会计入今日记录。</p>
+              </div>
+            )}
+
+            <div className="focus-dialog__actions">
+              {isEarlyExit ? (
+                <>
+                  <button
+                    className="focus-dialog__primary"
+                    type="button"
+                    onClick={continueFocus}
+                  >
+                    再坚持一下
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      onFinish(elapsedSeconds, false, exitSource)
+                    }
+                  >
+                    仍然结束
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    className="focus-dialog__primary"
+                    type="button"
+                    onClick={() =>
+                      onFinish(elapsedSeconds, false, exitSource)
+                    }
+                  >
+                    保存并结束
+                  </button>
+                  <button type="button" onClick={continueFocus}>
+                    继续专注
+                  </button>
+                </>
+              )}
+            </div>
+          </section>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function FocusPage() {
-  <h1 className="top-16">hello</h1>
+  const [preferences] = useState(() => readPreferences())
+  const [tasks] = useState(() => {
+    const cutoff = Date.now() - 86400000
+    return readTasks()
+      .filter(
+        (task) =>
+          !task.completed && new Date(task.end).getTime() > cutoff,
+      )
+      .sort((a, b) => new Date(a.start) - new Date(b.start))
+  })
+  const [mode, setMode] = useState(preferences.mode || 'up')
+  const [selectedTaskId, setSelectedTaskId] = useState('')
+  const [durationMinutes, setDurationMinutes] = useState(
+    preferences.durationMinutes || 50,
+  )
+  const [reminderMinutes, setReminderMinutes] = useState(
+    preferences.reminderMinutes ?? 120,
+  )
+  const [breakMinutes, setBreakMinutes] = useState(
+    preferences.breakMinutes || 10,
+  )
+  const [session, setSession] = useState(null)
+  const [summary, setSummary] = useState(null)
+
+  const selectedTask = tasks.find((task) => task.id === selectedTaskId)
+
+  function changeDuration(delta) {
+    setDurationMinutes((current) =>
+      Math.min(720, Math.max(1, current + delta)),
+    )
+  }
+
+  function startFocus() {
+    const nextSession = {
+      mode,
+      durationMinutes,
+      reminderMinutes,
+      breakMinutes,
+      task: selectedTask || null,
+    }
+    localStorage.setItem(
+      PREFERENCES_STORAGE_KEY,
+      JSON.stringify({
+        mode,
+        durationMinutes,
+        reminderMinutes,
+        breakMinutes,
+      }),
+    )
+    setSummary(null)
+    setSession(nextSession)
+  }
+
+  function finishFocus(
+    totalSeconds,
+    automatic = false,
+    exitSource = 'automatic',
+  ) {
+    const saved = totalSeconds >= MIN_SAVED_FOCUS_SECONDS
+    if (saved) recordFocusTime(totalSeconds)
+    setSession(null)
+    setSummary({
+      minutes: Math.max(0, Math.floor(totalSeconds / 60)),
+      automatic,
+      saved,
+    })
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {})
+
+    window.setTimeout(() => {
+      if (exitSource === 'back') window.history.go(-2)
+      else window.history.back()
+    }, 0)
+  }
+
+  if (session) {
+    return <FocusTimer {...session} onFinish={finishFocus} />
+  }
+
+  return (
+    <main className="focus-page">
+      <div className="focus-page__orb focus-page__orb--one" />
+      <div className="focus-page__orb focus-page__orb--two" />
+
+      <div className="focus-shell">
+        <header className="focus-heading">
+          <div>
+            <p className="focus-kicker">
+              <span />
+              FOCUS STUDIO
+            </p>
+            <h1>把世界调成<span>静音</span></h1>
+            <p className="focus-heading__copy">
+              选择一种节奏，然后把注意力留给眼前唯一重要的事。
+            </p>
+          </div>
+          <div className="focus-heading__status">
+            <i />
+            空间已准备好
+          </div>
+        </header>
+
+        {summary && (
+          <section className="focus-summary" aria-live="polite">
+            <span>✓</span>
+            <div>
+              <strong>
+                {summary.saved
+                  ? summary.automatic
+                    ? '本轮专注已自动完成'
+                    : '这段专注已收好'
+                  : '短暂离开也没关系'}
+              </strong>
+              <p>
+                {summary.saved
+                  ? `你为重要的事投入了 ${summary.minutes} 分钟，做得很好。`
+                  : '这次不足 5 分钟，没有计入统计。准备好时，我们再开始。'}
+              </p>
+            </div>
+            <button type="button" onClick={() => setSummary(null)} aria-label="关闭">
+              ×
+            </button>
+          </section>
+        )}
+
+        <div className="focus-grid">
+          <section className="focus-panel focus-panel--primary">
+            <div className="focus-panel__title">
+              <span>01</span>
+              <div>
+                <h2>这次专注于什么？</h2>
+                <p>可以关联日程任务，也可以直接开始</p>
+              </div>
+            </div>
+
+            <div className="task-options" role="radiogroup" aria-label="选择专注任务">
+              <button
+                type="button"
+                role="radio"
+                aria-checked={!selectedTaskId}
+                className={!selectedTaskId ? 'is-selected' : ''}
+                onClick={() => setSelectedTaskId('')}
+              >
+                <span className="task-option__icon">∞</span>
+                <span>
+                  <strong>自由专注</strong>
+                  <small>不关联任何任务</small>
+                </span>
+                <i />
+              </button>
+              {tasks.slice(0, 4).map((task) => (
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={selectedTaskId === task.id}
+                  className={selectedTaskId === task.id ? 'is-selected' : ''}
+                  onClick={() => setSelectedTaskId(task.id)}
+                  key={task.id}
+                >
+                  <span className="task-option__icon task-option__icon--task">✓</span>
+                  <span>
+                    <strong>{task.title}</strong>
+                    <small>{formatTaskDate(task)}</small>
+                  </span>
+                  <i />
+                </button>
+              ))}
+            </div>
+
+            {tasks.length === 0 && (
+              <p className="focus-panel__empty">
+                日程中还没有可选任务，先用自由专注也完全可以。
+              </p>
+            )}
+          </section>
+
+          <section className="focus-panel focus-panel--timer">
+            <div className="focus-panel__title">
+              <span>02</span>
+              <div>
+                <h2>选择计时方式</h2>
+                <p>最长 12 小时，到时会自动停止</p>
+              </div>
+            </div>
+
+            <div className="mode-switch">
+              <button
+                type="button"
+                className={mode === 'up' ? 'is-active' : ''}
+                onClick={() => setMode('up')}
+              >
+                <span>↗</span>
+                <strong>正计时</strong>
+                <small>开放节奏</small>
+              </button>
+              <button
+                type="button"
+                className={mode === 'down' ? 'is-active' : ''}
+                onClick={() => setMode('down')}
+              >
+                <span>↓</span>
+                <strong>倒计时</strong>
+                <small>明确边界</small>
+              </button>
+            </div>
+
+            {mode === 'down' && (
+              <div className="duration-control">
+                <div className="duration-control__top">
+                  <span>专注时长</span>
+                  <strong>
+                    {Math.floor(durationMinutes / 60) > 0 &&
+                      `${Math.floor(durationMinutes / 60)} 小时 `}
+                    {durationMinutes % 60 > 0 && `${durationMinutes % 60} 分钟`}
+                  </strong>
+                </div>
+                <div className="duration-stepper">
+                  <button type="button" onClick={() => changeDuration(-5)} aria-label="减少五分钟">
+                    −
+                  </button>
+                  <div>
+                    <span>{pad(Math.floor(durationMinutes / 60))}</span>
+                    <i>:</i>
+                    <span>{pad(durationMinutes % 60)}</span>
+                  </div>
+                  <button type="button" onClick={() => changeDuration(5)} aria-label="增加五分钟">
+                    ＋
+                  </button>
+                </div>
+                <div className="duration-presets">
+                  {[25, 50, 90, 120].map((minutes) => (
+                    <button
+                      type="button"
+                      className={durationMinutes === minutes ? 'is-active' : ''}
+                      onClick={() => setDurationMinutes(minutes)}
+                      key={minutes}
+                    >
+                      {minutes} 分钟
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </section>
+
+          <section className="focus-panel focus-panel--care">
+            <div className="focus-panel__title">
+              <span>03</span>
+              <div>
+                <h2>专注也需要留白</h2>
+                <p>到点后温柔提醒，不会突然打断</p>
+              </div>
+            </div>
+
+            <div className="care-settings">
+              <label>
+                <span>
+                  <strong>休息提醒</strong>
+                  <small>持续专注多久后提醒</small>
+                </span>
+                <select
+                  value={reminderMinutes}
+                  onChange={(event) => setReminderMinutes(Number(event.target.value))}
+                >
+                  <option value="60">60 分钟后</option>
+                  <option value="90">90 分钟后</option>
+                  <option value="120">120 分钟后</option>
+                  <option value="0">不提醒</option>
+                </select>
+              </label>
+              <label>
+                <span>
+                  <strong>建议休息</strong>
+                  <small>提醒时提供的休息时长</small>
+                </span>
+                <select
+                  value={breakMinutes}
+                  onChange={(event) => setBreakMinutes(Number(event.target.value))}
+                  disabled={!reminderMinutes}
+                >
+                  <option value="5">5 分钟</option>
+                  <option value="10">10 分钟</option>
+                  <option value="15">15 分钟</option>
+                  <option value="20">20 分钟</option>
+                </select>
+              </label>
+            </div>
+
+            <div className="focus-care-note">
+              <span>✦</span>
+              <p>
+                {reminderMinutes
+                  ? `持续专注 ${reminderMinutes} 分钟后，我会询问你是否休息。`
+                  : '本次不主动提醒休息，你仍可随时暂停。'}
+              </p>
+            </div>
+          </section>
+        </div>
+
+        <footer className="focus-launch">
+          <div>
+            <span className="focus-launch__dot" />
+            <p>
+              {selectedTask ? selectedTask.title : '自由专注'}
+              <small>
+                {mode === 'up'
+                  ? '从 00:00 开始记录'
+                  : `倒计时 ${durationMinutes} 分钟`}
+              </small>
+            </p>
+          </div>
+          <button type="button" onClick={startFocus}>
+            开始专注
+            <span>→</span>
+          </button>
+        </footer>
+      </div>
+    </main>
+  )
 }
 
 export default FocusPage
