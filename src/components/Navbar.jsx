@@ -8,7 +8,7 @@ const navItems = [
   {
     id: 'calendar',
     name: '日程',
-    path: '/calendar',
+    path: '/schedule',
     description: '安排和查看每日任务',
   },
   {
