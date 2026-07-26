@@ -12,6 +12,15 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:image" content="/og.png" />
     <title>MANOONG · 个人学习效率空间</title>
+    <script>
+      ;(() => {
+        const route = new URLSearchParams(window.location.search).get('__spa')
+
+        if (route && route.startsWith('/') && !route.startsWith('//')) {
+          window.history.replaceState(null, '', route)
+        }
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>

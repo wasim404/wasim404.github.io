@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex" />
+    <title>正在打开 MANOONG…</title>
+    <script>
+      ;(() => {
+        const route =
+          window.location.pathname +
+          window.location.search +
+          window.location.hash
+        const target =
+          window.location.origin + '/?__spa=' + encodeURIComponent(route)
+
+        window.location.replace(target)
+      })()
+    </script>
+  </head>
+  <body>
+    <p>
+      正在打开页面。如果没有自动跳转，请
+      <a href="/">返回 MANOONG 首页</a>。
+    </p>
+  </body>
+</html>
