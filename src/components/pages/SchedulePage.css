@@ -15,6 +15,30 @@
     var(--schedule-paper);
 }
 
+.schedule-page [data-priority='important-urgent'] {
+  --task-priority: #c95b54;
+  --task-priority-soft: #f9e7e4;
+  --task-priority-ink: #9e403b;
+}
+
+.schedule-page [data-priority='important-not-urgent'] {
+  --task-priority: #4d7fa8;
+  --task-priority-soft: #e7f0f7;
+  --task-priority-ink: #3e6b91;
+}
+
+.schedule-page [data-priority='not-important-urgent'] {
+  --task-priority: #c48734;
+  --task-priority-soft: #fbefd9;
+  --task-priority-ink: #936321;
+}
+
+.schedule-page [data-priority='not-important-not-urgent'] {
+  --task-priority: #7f9187;
+  --task-priority-soft: #e9efeb;
+  --task-priority-ink: #60736a;
+}
+
 .schedule-shell {
   width: min(1180px, 100%);
   margin: 0 auto;
@@ -312,6 +336,10 @@
   background: #ffffff;
 }
 
+.flex-task[data-priority] {
+  box-shadow: inset 3px 0 0 var(--task-priority);
+}
+
 .flex-task__order {
   color: #a1afad;
   font-size: 9px;
@@ -333,6 +361,45 @@
   margin: 3px 0 0;
   color: #8a9a98;
   font-size: 10px;
+}
+
+.task-copy {
+  min-width: 0;
+}
+
+.task-meta {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+}
+
+.task-meta p {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.task-priority-badge {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 4px;
+  margin-top: 3px;
+  padding: 3px 6px;
+  border-radius: 99px;
+  color: var(--task-priority-ink);
+  background: var(--task-priority-soft);
+  font-size: 8px;
+  font-weight: 750;
+  line-height: 1;
+}
+
+.task-priority-badge i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--task-priority);
 }
 
 .task-check {
@@ -367,6 +434,13 @@
   text-decoration: line-through;
 }
 
+.task-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 3px;
+}
+
+.task-edit,
 .task-delete {
   display: grid;
   width: 25px;
@@ -381,10 +455,18 @@
   transition: 160ms ease;
 }
 
+.flex-task:hover .task-edit,
 .flex-task:hover .task-delete,
+.timeline-task:hover .task-edit,
 .timeline-task:hover .task-delete,
+.task-edit:focus,
 .task-delete:focus {
   opacity: 1;
+}
+
+.task-edit:hover {
+  color: #456f76;
+  background: #e7f0ef;
 }
 
 .task-delete:hover {
@@ -434,6 +516,11 @@
   box-shadow: 0 0 0 1px rgba(94, 127, 157, 0.2);
 }
 
+.timeline-task[data-priority] .timeline-task__node {
+  background: var(--task-priority);
+  box-shadow: 0 0 0 1px var(--task-priority-soft);
+}
+
 .timeline-task__card {
   display: flex;
   align-items: center;
@@ -444,7 +531,11 @@
   background: #f4f6f6;
 }
 
-.timeline-task__card > div {
+.timeline-task[data-priority] .timeline-task__card {
+  box-shadow: inset 3px 0 0 var(--task-priority);
+}
+
+.timeline-task__card > .task-copy {
   min-width: 0;
   flex: 1;
 }
@@ -508,6 +599,8 @@
 
 .schedule-modal {
   width: min(520px, 100%);
+  max-height: calc(100dvh - 36px);
+  overflow-y: auto;
   padding: 27px;
   border: 1px solid rgba(255, 255, 255, 0.7);
   border-radius: 27px;
@@ -625,6 +718,111 @@
 .time-choice button.is-active > span,
 .time-choice button.is-active strong {
   color: var(--schedule-green);
+}
+
+.priority-picker {
+  margin: 19px 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.priority-picker legend {
+  color: #617677;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.priority-picker legend span {
+  margin-left: 5px;
+  padding: 3px 6px;
+  border-radius: 99px;
+  color: #849491;
+  background: #eef2ef;
+  font-size: 8px;
+  font-weight: 650;
+}
+
+.priority-picker > p {
+  margin: 5px 0 10px;
+  color: #91a09e;
+  font-size: 9px;
+}
+
+.priority-picker__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.priority-picker__grid button {
+  display: grid;
+  grid-template-columns: 8px minmax(0, 1fr) 20px;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid #e0e6e2;
+  border-radius: 13px;
+  color: #6e7e7d;
+  background: #fafbf8;
+  cursor: pointer;
+  text-align: left;
+  transition: 160ms ease;
+}
+
+.priority-picker__grid button:hover {
+  border-color: var(--task-priority);
+  transform: translateY(-1px);
+}
+
+.priority-picker__grid button.is-active {
+  border-color: var(--task-priority);
+  color: var(--task-priority-ink);
+  background: var(--task-priority-soft);
+  box-shadow: 0 5px 14px color-mix(in srgb, var(--task-priority) 12%, transparent);
+}
+
+.priority-picker__grid button > i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--task-priority);
+}
+
+.priority-picker__grid button > span {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.priority-picker__grid button strong {
+  overflow: hidden;
+  color: var(--task-priority-ink);
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.priority-picker__grid button small {
+  color: #8b9997;
+  font-size: 8px;
+}
+
+.priority-picker__grid button > b {
+  display: grid;
+  width: 19px;
+  height: 19px;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--task-priority) 38%, transparent);
+  border-radius: 6px;
+  color: #ffffff;
+  background: transparent;
+  font-size: 9px;
+}
+
+.priority-picker__grid button.is-active > b {
+  border-color: var(--task-priority);
+  background: var(--task-priority);
 }
 
 .schedule-time-wheels {
@@ -983,5 +1181,21 @@
 
   .time-choice {
     grid-template-columns: 1fr;
+  }
+
+  .schedule-modal {
+    padding: 22px 19px;
+  }
+
+  .task-edit,
+  .task-delete {
+    opacity: 1;
+  }
+}
+
+@media (hover: none) {
+  .task-edit,
+  .task-delete {
+    opacity: 1;
   }
 }

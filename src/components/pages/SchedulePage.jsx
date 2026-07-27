@@ -6,6 +6,33 @@ const TASKS_STORAGE_KEY = 'manoong-schedule-tasks'
 const DAILY_STATS_KEY = 'manoong-daily-stats'
 const TIME_WHEEL_ROW_HEIGHT = 40
 
+const PRIORITY_OPTIONS = [
+  {
+    value: 'important-urgent',
+    label: '重要 · 紧急',
+    shortLabel: '重要紧急',
+    hint: '优先立即处理',
+  },
+  {
+    value: 'important-not-urgent',
+    label: '重要 · 不紧急',
+    shortLabel: '重要不紧急',
+    hint: '规划时间推进',
+  },
+  {
+    value: 'not-important-urgent',
+    label: '不重要 · 紧急',
+    shortLabel: '紧急不重要',
+    hint: '尽快处理或委托',
+  },
+  {
+    value: 'not-important-not-urgent',
+    label: '不重要 · 不紧急',
+    shortLabel: '不重要不紧急',
+    hint: '有余力时再做',
+  },
+]
+
 const padNumber = (number) => String(number).padStart(2, '0')
 
 function dateKey(date) {
@@ -61,6 +88,11 @@ function normalizeTask(task, index) {
     createdAt,
     completed: Boolean(task.completed),
     completedAt: task.completedAt || null,
+    priority: PRIORITY_OPTIONS.some(
+      (option) => option.value === task.priority,
+    )
+      ? task.priority
+      : null,
   }
 }
 
@@ -89,6 +121,28 @@ function taskTimeLabel(task) {
   const start = new Date(task.start)
   const end = new Date(task.end)
   return `${padNumber(start.getHours())}:${padNumber(start.getMinutes())} — ${padNumber(end.getHours())}:${padNumber(end.getMinutes())}`
+}
+
+function timeInputValue(value, fallback) {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return fallback
+  return `${padNumber(date.getHours())}:${padNumber(date.getMinutes())}`
+}
+
+function priorityDetails(priority) {
+  return PRIORITY_OPTIONS.find((option) => option.value === priority)
+}
+
+function PriorityBadge({ priority }) {
+  const details = priorityDetails(priority)
+  if (!details) return null
+
+  return (
+    <span className="task-priority-badge" data-priority={priority}>
+      <i aria-hidden="true" />
+      {details.shortLabel}
+    </span>
+  )
 }
 
 function TimeWheelColumn({ label, value, max, onChange }) {
@@ -284,11 +338,17 @@ function TimeWheel({ label, value, onChange }) {
   )
 }
 
-function AddTaskModal({ selectedDate, onClose, onAddTask }) {
-  const [title, setTitle] = useState('')
-  const [hasTime, setHasTime] = useState(false)
-  const [startTime, setStartTime] = useState('09:00')
-  const [endTime, setEndTime] = useState('10:00')
+function TaskModal({ selectedDate, task, onClose, onSaveTask }) {
+  const isEditing = Boolean(task)
+  const [title, setTitle] = useState(task?.title || '')
+  const [hasTime, setHasTime] = useState(task?.hasTime ?? false)
+  const [startTime, setStartTime] = useState(() =>
+    timeInputValue(task?.start, '09:00'),
+  )
+  const [endTime, setEndTime] = useState(() =>
+    timeInputValue(task?.end, '10:00'),
+  )
+  const [priority, setPriority] = useState(task?.priority || null)
   const [error, setError] = useState('')
   const titleInputRef = useRef(null)
 
@@ -351,16 +411,18 @@ function AddTaskModal({ selectedDate, onClose, onAddTask }) {
     }
 
     const now = new Date().toISOString()
-    onAddTask({
-      id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+    onSaveTask({
+      ...task,
+      id: task?.id || `${Date.now()}-${Math.random().toString(16).slice(2)}`,
       title: cleanTitle,
       date: dateKey(selectedDate),
       hasTime,
       start: start.toISOString(),
       end: end.toISOString(),
-      createdAt: now,
-      completed: false,
-      completedAt: null,
+      priority,
+      createdAt: task?.createdAt || now,
+      completed: task?.completed || false,
+      completedAt: task?.completedAt || null,
     })
   }
 
@@ -377,12 +439,16 @@ function AddTaskModal({ selectedDate, onClose, onAddTask }) {
         onSubmit={handleSubmit}
         role="dialog"
         aria-modal="true"
-        aria-labelledby="add-task-title"
+        aria-labelledby="task-modal-title"
       >
         <header className="schedule-modal__header">
           <div>
-            <p>NEW TASK · {selectedDate.getMonth() + 1}/{selectedDate.getDate()}</p>
-            <h2 id="add-task-title">安排一件重要的事</h2>
+            <p>
+              {isEditing ? 'EDIT TASK' : 'NEW TASK'} · {selectedDate.getMonth() + 1}/{selectedDate.getDate()}
+            </p>
+            <h2 id="task-modal-title">
+              {isEditing ? '修改任务安排' : '安排一件想完成的事'}
+            </h2>
           </div>
           <button type="button" onClick={onClose} aria-label="关闭">×</button>
         </header>
@@ -453,13 +519,47 @@ function AddTaskModal({ selectedDate, onClose, onAddTask }) {
           </div>
         )}
 
+        <fieldset className="priority-picker">
+          <legend>
+            重要与紧急程度 <span>选填</span>
+          </legend>
+          <p>选择一个象限，再次点击可取消选择。</p>
+          <div className="priority-picker__grid">
+            {PRIORITY_OPTIONS.map((option) => (
+              <button
+                type="button"
+                key={option.value}
+                data-priority={option.value}
+                className={priority === option.value ? 'is-active' : ''}
+                aria-pressed={priority === option.value}
+                onClick={() =>
+                  setPriority((currentPriority) =>
+                    currentPriority === option.value ? null : option.value,
+                  )
+                }
+              >
+                <i aria-hidden="true" />
+                <span>
+                  <strong>{option.label}</strong>
+                  <small>{option.hint}</small>
+                </span>
+                <b aria-hidden="true">
+                  {priority === option.value ? '✓' : ''}
+                </b>
+              </button>
+            ))}
+          </div>
+        </fieldset>
+
         <div className="schedule-modal__error" aria-live="polite">
           {error && <p>{error}</p>}
         </div>
 
         <footer className="schedule-modal__footer">
           <button type="button" onClick={onClose}>取消</button>
-          <button type="submit">添加到日程 <span>→</span></button>
+          <button type="submit">
+            {isEditing ? '保存修改' : '添加到日程'} <span>→</span>
+          </button>
         </footer>
       </form>
     </div>
@@ -513,6 +613,7 @@ function SchedulePage() {
     readJson(DAILY_STATS_KEY, {}),
   )
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [taskToEdit, setTaskToEdit] = useState(null)
   const [taskToDelete, setTaskToDelete] = useState(null)
 
   useEffect(() => {
@@ -562,6 +663,15 @@ function SchedulePage() {
   function addTask(task) {
     setTasks((currentTasks) => [...currentTasks, task])
     setIsModalOpen(false)
+  }
+
+  function updateTask(updatedTask) {
+    setTasks((currentTasks) =>
+      currentTasks.map((task) =>
+        task.id === updatedTask.id ? updatedTask : task,
+      ),
+    )
+    setTaskToEdit(null)
   }
 
   function toggleTask(task) {
@@ -621,36 +731,29 @@ function SchedulePage() {
 
   function renderFlexibleTask(task, index) {
     return (
-      <article className={`flex-task ${task.completed ? 'is-complete' : ''}`} key={task.id}>
+      <article
+        className={`flex-task ${task.completed ? 'is-complete' : ''}`}
+        data-priority={task.priority || undefined}
+        key={task.id}
+      >
         <TaskCheck task={task} onToggle={toggleTask} />
         <span className="flex-task__order">{padNumber(index + 1)}</span>
-        <div>
+        <div className="task-copy">
           <h4>{task.title}</h4>
-          <p>{task.completed ? '已完成' : '按创建顺序排列'}</p>
-        </div>
-        <button
-          type="button"
-          className="task-delete"
-          onClick={() => setTaskToDelete(task)}
-          aria-label={`删除任务：${task.title}`}
-        >
-          ×
-        </button>
-      </article>
-    )
-  }
-
-  function renderTimedTask(task) {
-    return (
-      <article className={`timeline-task ${task.completed ? 'is-complete' : ''}`} key={task.id}>
-        <time>{taskTimeLabel(task).split(' — ')[0]}</time>
-        <span className="timeline-task__node" />
-        <div className="timeline-task__card">
-          <TaskCheck task={task} onToggle={toggleTask} />
-          <div>
-            <h4>{task.title}</h4>
-            <p>{taskTimeLabel(task)}</p>
+          <div className="task-meta">
+            <p>{task.completed ? '已完成' : '按创建顺序排列'}</p>
+            <PriorityBadge priority={task.priority} />
           </div>
+        </div>
+        <div className="task-actions">
+          <button
+            type="button"
+            className="task-edit"
+            onClick={() => setTaskToEdit(task)}
+            aria-label={`编辑任务：${task.title}`}
+          >
+            ✎
+          </button>
           <button
             type="button"
             className="task-delete"
@@ -659,6 +762,47 @@ function SchedulePage() {
           >
             ×
           </button>
+        </div>
+      </article>
+    )
+  }
+
+  function renderTimedTask(task) {
+    return (
+      <article
+        className={`timeline-task ${task.completed ? 'is-complete' : ''}`}
+        data-priority={task.priority || undefined}
+        key={task.id}
+      >
+        <time>{taskTimeLabel(task).split(' — ')[0]}</time>
+        <span className="timeline-task__node" />
+        <div className="timeline-task__card">
+          <TaskCheck task={task} onToggle={toggleTask} />
+          <div className="task-copy">
+            <h4>{task.title}</h4>
+            <div className="task-meta">
+              <p>{taskTimeLabel(task)}</p>
+              <PriorityBadge priority={task.priority} />
+            </div>
+          </div>
+          <div className="task-actions">
+            <button
+              type="button"
+              className="task-edit"
+              onClick={() => setTaskToEdit(task)}
+              aria-label={`编辑任务：${task.title}`}
+            >
+              ✎
+            </button>
+            <button
+              type="button"
+              className="task-delete"
+              onClick={() => setTaskToDelete(task)}
+              aria-label={`删除任务：${task.title}`}
+            >
+              ×
+            </button>
+          </div>
         </div>
       </article>
     )
@@ -787,10 +931,19 @@ function SchedulePage() {
       </button>
 
       {isModalOpen && (
-        <AddTaskModal
+        <TaskModal
           selectedDate={selectedDate}
           onClose={() => setIsModalOpen(false)}
-          onAddTask={addTask}
+          onSaveTask={addTask}
+        />
+      )}
+
+      {taskToEdit && (
+        <TaskModal
+          selectedDate={selectedDate}
+          task={taskToEdit}
+          onClose={() => setTaskToEdit(null)}
+          onSaveTask={updateTask}
         />
       )}
 
