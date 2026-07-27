@@ -255,12 +255,6 @@ function ProgressRing({ value, label, detail, tone = 'mint' }) {
 function HomePage() {
   const [now, setNow] = useState(() => new Date())
   const dateKey = getDateKey(now)
-  const [intention, setIntention] = useState(
-    () => localStorage.getItem('manoong-daily-intention') || '',
-  )
-  const [intentionDone, setIntentionDone] = useState(
-    () => localStorage.getItem('manoong-daily-intention-done') === 'true',
-  )
   const [energy, setEnergy] = useState(
     () => Number(localStorage.getItem('manoong-energy') || 2),
   )
@@ -283,11 +277,6 @@ function HomePage() {
     const timer = window.setInterval(() => setNow(new Date()), 60000)
     return () => window.clearInterval(timer)
   }, [])
-
-  useEffect(() => {
-    localStorage.setItem('manoong-daily-intention', intention)
-    localStorage.setItem('manoong-daily-intention-done', String(intentionDone))
-  }, [intention, intentionDone])
 
   useEffect(() => {
     if (checkinStatus !== 'unlocking') return undefined
@@ -462,28 +451,6 @@ function HomePage() {
         </div>
 
         <div className="studio-grid">
-          <article className="intention-card">
-            <div className="card-label"><Icon>◎</Icon><span>今日唯一要事</span></div>
-            <div className="intention-input">
-              <button
-                type="button"
-                className={intentionDone ? 'check-button is-checked' : 'check-button'}
-                aria-label={intentionDone ? '标记为未完成' : '标记为完成'}
-                onClick={() => setIntentionDone((value) => !value)}
-              >{intentionDone ? '✓' : ''}</button>
-              <input
-                value={intention}
-                onChange={(event) => {
-                  setIntention(event.target.value)
-                  setIntentionDone(false)
-                }}
-                placeholder="例如：完成课程第三章笔记"
-                aria-label="今日唯一要事"
-              />
-            </div>
-            <p>{intentionDone ? '做到了。请认真收下这份小小的成就感。' : '写下来，注意力就有了方向。'}</p>
-          </article>
-
           <article className="energy-card">
             <div className="card-label"><Icon>⌁</Icon><span>此刻能量</span></div>
             <div className="energy-picker" role="group" aria-label="选择此刻能量">
@@ -509,9 +476,20 @@ function HomePage() {
             <button className="dice-display" type="button" onClick={rollFocus} aria-label="随机一个专注时长">
               <strong>{focusMinutes}</strong><span>MIN</span>
             </button>
-            <div>
+            <div className="focus-dice-card__content">
               <p>选择困难？让运气替你决定一轮。</p>
-              <button type="button" className="small-button" onClick={rollFocus}>再摇一次 ↻</button>
+              <div className="dice-actions">
+                <button type="button" className="small-button" onClick={rollFocus}>
+                  再摇一次 ↻
+                </button>
+                <Link
+                  className="dice-start-button"
+                  to="/focus"
+                  state={{ focusLaunch: { durationMinutes: focusMinutes } }}
+                >
+                  开始专注 <span aria-hidden="true">→</span>
+                </Link>
+              </div>
             </div>
           </article>
         </div>

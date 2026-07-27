@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import {
   localDateKey,
   nextTaskOccurrence,
@@ -9,6 +10,7 @@ import './FocusPage.css'
 const TASKS_STORAGE_KEY = 'manoong-schedule-tasks'
 const PREFERENCES_STORAGE_KEY = 'manoong-focus-preferences'
 const DAILY_STATS_KEY = 'manoong-daily-stats'
+const ACTIVE_FOCUS_SESSION_KEY = 'manoong-active-focus-session'
 const MAX_SECONDS = 12 * 60 * 60
 const MIN_SAVED_FOCUS_SECONDS = 5 * 60
 
@@ -58,6 +60,84 @@ function readPreferences() {
   }
 }
 
+function readActiveFocusSession() {
+  try {
+    const snapshot = JSON.parse(
+      sessionStorage.getItem(ACTIVE_FOCUS_SESSION_KEY) || 'null',
+    )
+    if (
+      !snapshot ||
+      (snapshot.mode !== 'up' && snapshot.mode !== 'down') ||
+      !Number.isFinite(Number(snapshot.elapsedSeconds)) ||
+      Date.now() - Number(snapshot.savedAt) > 24 * 60 * 60 * 1000
+    ) {
+      sessionStorage.removeItem(ACTIVE_FOCUS_SESSION_KEY)
+      return null
+    }
+
+    const durationMinutes = Math.min(
+      720,
+      Math.max(1, Number(snapshot.durationMinutes) || 50),
+    )
+    const maximumElapsed =
+      snapshot.mode === 'down' ? durationMinutes * 60 : MAX_SECONDS
+
+    return {
+      mode: snapshot.mode,
+      durationMinutes,
+      reminderMinutes: Math.max(0, Number(snapshot.reminderMinutes) || 0),
+      breakMinutes: Math.max(1, Number(snapshot.breakMinutes) || 10),
+      task:
+        snapshot.task && typeof snapshot.task === 'object'
+          ? snapshot.task
+          : null,
+      resumeElapsedSeconds: Math.min(
+        maximumElapsed,
+        Math.max(0, Number(snapshot.elapsedSeconds) || 0),
+      ),
+      resumePaused: Boolean(snapshot.isPaused),
+      resumeAfterRefresh: true,
+    }
+  } catch {
+    return null
+  }
+}
+
+function saveActiveFocusSession(snapshot) {
+  try {
+    sessionStorage.setItem(
+      ACTIVE_FOCUS_SESSION_KEY,
+      JSON.stringify({ ...snapshot, savedAt: Date.now() }),
+    )
+  } catch {
+    // Focus remains usable even if session storage is unavailable.
+  }
+}
+
+function clearActiveFocusSession() {
+  try {
+    sessionStorage.removeItem(ACTIVE_FOCUS_SESSION_KEY)
+  } catch {
+    // Nothing else is required when browser storage is unavailable.
+  }
+}
+
+function createLaunchSession(launchRequest, preferences) {
+  const requestedMinutes = Number(launchRequest?.durationMinutes)
+  if (!Number.isFinite(requestedMinutes)) return null
+
+  return {
+    mode: 'down',
+    durationMinutes: Math.min(720, Math.max(1, Math.round(requestedMinutes))),
+    reminderMinutes: Math.max(
+      0,
+      Number(preferences.reminderMinutes) || 0,
+    ),
+    breakMinutes: Math.max(1, Number(preferences.breakMinutes) || 10),
+    task: null,
+  }
+}
+
 function formatTaskDate(task) {
   const date = new Date(task.occurrenceStart || task.start)
   const today = new Date()
@@ -98,15 +178,30 @@ function FocusTimer({
   task,
   reminderMinutes,
   breakMinutes,
+  resumeElapsedSeconds = 0,
+  resumePaused = false,
+  resumeAfterRefresh = false,
   onFinish,
 }) {
   const initialSeconds = mode === 'down' ? durationMinutes * 60 : 0
-  const [seconds, setSeconds] = useState(initialSeconds)
-  const [isPaused, setIsPaused] = useState(false)
+  const safeResumeElapsed = Math.min(
+    mode === 'down' ? initialSeconds : MAX_SECONDS,
+    Math.max(0, Number(resumeElapsedSeconds) || 0),
+  )
+  const [seconds, setSeconds] = useState(() =>
+    mode === 'down'
+      ? Math.max(0, initialSeconds - safeResumeElapsed)
+      : safeResumeElapsed,
+  )
+  const [isPaused, setIsPaused] = useState(Boolean(resumePaused))
   const [showControls, setShowControls] = useState(true)
   const [showRestPrompt, setShowRestPrompt] = useState(false)
-  const [showStopPrompt, setShowStopPrompt] = useState(false)
-  const [exitSource, setExitSource] = useState('control')
+  const [showStopPrompt, setShowStopPrompt] = useState(
+    Boolean(resumeAfterRefresh),
+  )
+  const [exitSource, setExitSource] = useState(
+    resumeAfterRefresh ? 'restore' : 'control',
+  )
   const [isResting, setIsResting] = useState(false)
   const [restSeconds, setRestSeconds] = useState(breakMinutes * 60)
   const reminderShownRef = useRef(false)
@@ -132,6 +227,7 @@ function FocusTimer({
 
     function handleBrowserBack() {
       setExitSource('back')
+      setShowRestPrompt(false)
       addHistoryGuard()
       setShowStopPrompt(true)
     }
@@ -217,18 +313,37 @@ function FocusTimer({
 
   useEffect(() => {
     function handleKeyDown(event) {
-      if (event.code === 'Space' && !showRestPrompt && !showStopPrompt) {
+      const isRefreshShortcut =
+        event.key === 'F5' ||
+        ((event.ctrlKey || event.metaKey) &&
+          event.key.toLowerCase() === 'r')
+
+      if (isRefreshShortcut) {
+        event.preventDefault()
+        setExitSource('refresh')
+        setShowRestPrompt(false)
+        setShowStopPrompt(true)
+        return
+      }
+
+      if (
+        event.code === 'Space' &&
+        !isResting &&
+        !showRestPrompt &&
+        !showStopPrompt
+      ) {
         event.preventDefault()
         setIsPaused((current) => !current)
       }
       if (event.key === 'Escape') {
         setExitSource('control')
+        setShowRestPrompt(false)
         setShowStopPrompt(true)
       }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [showRestPrompt, showStopPrompt])
+  }, [isResting, showRestPrompt, showStopPrompt])
 
   function revealControls() {
     setShowControls(true)
@@ -238,6 +353,7 @@ function FocusTimer({
 
   function requestStop(source = 'control') {
     setExitSource(source)
+    setShowRestPrompt(false)
     setShowStopPrompt(true)
   }
 
@@ -261,6 +377,26 @@ function FocusTimer({
   const hours = pad(Math.floor(visibleSeconds / 3600))
   const minutes = pad(Math.floor((visibleSeconds % 3600) / 60))
   const secondValue = pad(visibleSeconds % 60)
+
+  useEffect(() => {
+    saveActiveFocusSession({
+      mode,
+      durationMinutes,
+      reminderMinutes,
+      breakMinutes,
+      task,
+      elapsedSeconds,
+      isPaused,
+    })
+  }, [
+    breakMinutes,
+    durationMinutes,
+    elapsedSeconds,
+    isPaused,
+    mode,
+    reminderMinutes,
+    task,
+  ])
 
   return (
     <div
@@ -320,7 +456,11 @@ function FocusTimer({
         </button>
       </div>
 
-      <span className="focus-timer__hint">移动光标显示控制 · 空格暂停</span>
+      <span className="focus-timer__hint">
+        {isResting
+          ? '休息计时中 · 回来后会继续保持原来的节奏'
+          : '移动光标显示控制 · 空格暂停'}
+      </span>
 
       {showRestPrompt && (
         <div className="focus-dialog-backdrop">
@@ -360,13 +500,27 @@ function FocusTimer({
           >
             {isEarlyExit && <span className="focus-dialog__early-icon">↗</span>}
             <p className="focus-dialog__eyebrow">
-              {exitSource === 'back' ? '离开专注模式' : '结束专注'}
+              {exitSource === 'back'
+                ? '离开专注模式'
+                : exitSource === 'refresh'
+                  ? '刷新当前页面'
+                  : exitSource === 'restore'
+                    ? '专注状态已恢复'
+                  : '结束专注'}
             </p>
             <h2>
-              {isEarlyExit ? '才刚刚开始，要现在离开吗？' : '要保存这段专注吗？'}
+              {exitSource === 'restore'
+                ? '要继续刚才的专注吗？'
+                : isEarlyExit
+                  ? '才刚刚开始，要现在离开吗？'
+                  : '要保存这段专注吗？'}
             </h2>
             <p>
-              {isEarlyExit
+              {exitSource === 'restore'
+                ? `已为你恢复到 ${Math.floor(elapsedSeconds / 60)}:${pad(
+                    elapsedSeconds % 60,
+                  )}，确认后再决定继续或结束。`
+                : isEarlyExit
                 ? encouragement
                 : `本次已经专注 ${Math.floor(elapsedSeconds / 60)} 分钟，可以安心收尾了。`}
             </p>
@@ -404,7 +558,11 @@ function FocusTimer({
                       onFinish(elapsedSeconds, false, exitSource)
                     }
                   >
-                    仍然结束
+                    {exitSource === 'refresh'
+                      ? '仍然刷新'
+                      : exitSource === 'restore'
+                        ? '结束这次专注'
+                        : '仍然结束'}
                   </button>
                 </>
               ) : (
@@ -416,7 +574,9 @@ function FocusTimer({
                       onFinish(elapsedSeconds, false, exitSource)
                     }
                   >
-                    保存并结束
+                    {exitSource === 'refresh'
+                      ? '保存并刷新'
+                      : '保存并结束'}
                   </button>
                   <button type="button" onClick={continueFocus}>
                     继续专注
@@ -551,6 +711,8 @@ function FocusCelebration({
 }
 
 function FocusPage() {
+  const location = useLocation()
+  const navigate = useNavigate()
   const [preferences] = useState(() => readPreferences())
   const [tasks] = useState(() => {
     const cutoff = Date.now() - 86400000
@@ -595,9 +757,18 @@ function FocusPage() {
   const [breakMinutes, setBreakMinutes] = useState(
     preferences.breakMinutes || 10,
   )
-  const [session, setSession] = useState(null)
+  const [session, setSession] = useState(
+    () =>
+      readActiveFocusSession() ||
+      createLaunchSession(location.state?.focusLaunch, preferences),
+  )
   const [summary, setSummary] = useState(null)
   const [celebration, setCelebration] = useState(null)
+
+  useEffect(() => {
+    if (!location.state?.focusLaunch) return
+    navigate(location.pathname, { replace: true, state: null })
+  }, [location.pathname, location.state, navigate])
 
   const selectedTask = tasks.find(
     (task) => task.focusOptionId === selectedTaskId,
@@ -610,6 +781,7 @@ function FocusPage() {
   }
 
   function startFocus() {
+    clearActiveFocusSession()
     const nextSession = {
       mode,
       durationMinutes,
@@ -626,6 +798,11 @@ function FocusPage() {
         breakMinutes,
       }),
     )
+    saveActiveFocusSession({
+      ...nextSession,
+      elapsedSeconds: 0,
+      isPaused: false,
+    })
     setSummary(null)
     setCelebration(null)
     setSession(nextSession)
@@ -633,7 +810,8 @@ function FocusPage() {
 
   function leaveFocus(exitSource) {
     window.setTimeout(() => {
-      if (exitSource === 'back') window.history.go(-2)
+      if (exitSource === 'refresh') window.location.reload()
+      else if (exitSource === 'back') window.history.go(-2)
       else window.history.back()
     }, 0)
   }
@@ -643,6 +821,7 @@ function FocusPage() {
     automatic = false,
     exitSource = 'automatic',
   ) {
+    clearActiveFocusSession()
     const eligible = totalSeconds >= MIN_SAVED_FOCUS_SECONDS
     const saved = eligible ? recordFocusTime(totalSeconds) : false
     const result = {

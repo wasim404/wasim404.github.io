@@ -5,6 +5,7 @@ import HomePage from './components/pages/HomePage'
 import FocusPage from './components/pages/FocusPage'
 import SchedulePage from './components/pages/SchedulePage'
 import AboutPage from './components/pages/AboutPage'
+import NotFoundPage from './components/pages/NotFoundPage'
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
         <Route path="focus" element={<FocusPage />} />
         <Route path="schedule" element={<SchedulePage />} />
         <Route path="about" element={<AboutPage />} />
+        <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>
   )

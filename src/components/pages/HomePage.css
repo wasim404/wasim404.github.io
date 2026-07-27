@@ -231,7 +231,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .section-heading h2 { margin: 10px 0 0; font-size: clamp(30px, 3vw, 42px); letter-spacing: -.035em; }
 .section-heading > p { margin: 0; color: var(--ink-soft); line-height: 1.7; font-size: 13px; }
 .progress-grid { display: grid; grid-template-columns: .85fr 1.25fr 1.3fr; gap: 17px; }
-.progress-card, .month-progress-card, .day-progress-card, .intention-card, .energy-card, .focus-dice-card {
+.progress-card, .month-progress-card, .day-progress-card, .energy-card, .focus-dice-card {
   border: 1px solid var(--line);
   border-radius: 22px;
   background: rgba(255,253,248,.82);
@@ -278,16 +278,10 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .section-heading--compact { align-items: center; }
 .live-note { display: flex; align-items: center; gap: 8px; color: var(--ink-soft); font-size: 11px; }
 .live-note i { width: 7px; height: 7px; background: var(--mint); border-radius: 50%; box-shadow: 0 0 0 5px var(--mint-light); }
-.studio-grid { display: grid; grid-template-columns: 1.4fr .9fr 1.1fr; gap: 17px; }
-.intention-card, .energy-card, .focus-dice-card { padding: 25px; min-height: 190px; }
+.studio-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 17px; }
+.energy-card, .focus-dice-card { padding: 25px; min-height: 190px; }
 .card-label { display: flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 700; }
-.intention-input { display: flex; gap: 13px; align-items: center; margin: 25px 0 14px; }
-.check-button { flex: 0 0 auto; width: 27px; height: 27px; border: 1.5px solid #a8bbb3; border-radius: 50%; color: #fff; background: transparent; cursor: pointer; }
-.check-button.is-checked { border-color: var(--mint); background: var(--mint); }
-.intention-input input { width: 100%; padding: 10px 0; border: 0; border-bottom: 1px solid var(--line); outline: 0; background: transparent; color: var(--ink); font-size: 15px; }
-.intention-input input:focus { border-bottom-color: var(--mint); }
-.intention-input input::placeholder { color: #9aaba4; }
-.intention-card > p, .energy-card > p, .focus-dice-card p { margin: 0; color: var(--ink-soft); font-size: 11px; }
+.energy-card > p, .focus-dice-card p { margin: 0; color: var(--ink-soft); font-size: 11px; }
 .energy-picker { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 24px 0 17px; }
 .energy-picker button { display: flex; flex-direction: column; gap: 6px; align-items: center; padding: 10px 2px; border: 1px solid transparent; border-radius: 11px; color: var(--ink-soft); background: var(--paper); font-size: 10px; cursor: pointer; }
 .energy-picker button span { font-size: 18px; color: #9db1a9; }
@@ -298,8 +292,13 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .dice-display { width: 86px; height: 86px; align-self: end; display: flex; flex-direction: column; place-content: center; border: 0; border-radius: 20px; background: var(--coral); color: #fff; cursor: pointer; box-shadow: 0 8px 20px rgba(232,120,95,.22); transform: rotate(-2deg); }
 .dice-display strong { font-size: 32px; line-height: 1; }
 .dice-display span { margin-top: 4px; font-size: 9px; letter-spacing: .18em; }
-.focus-dice-card > div:last-child { align-self: end; }
+.focus-dice-card__content { align-self: end; }
+.dice-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 17px; }
 .small-button { margin-top: 17px; padding: 7px 11px; border: 0; border-radius: 8px; background: var(--mint-light); color: var(--ink); font-size: 10px; font-weight: 700; cursor: pointer; }
+.dice-actions .small-button { margin-top: 0; }
+.dice-start-button { display: inline-flex; align-items: center; gap: 7px; padding: 7px 12px; border-radius: 8px; background: var(--ink); color: #fff; font-size: 10px; font-weight: 700; text-decoration: none; transition: transform .2s ease, background .2s ease, box-shadow .2s ease; }
+.dice-start-button:hover { background: var(--coral); box-shadow: 0 6px 14px rgba(232,120,95,.2); transform: translateY(-1px); }
+.dice-start-button:focus-visible { outline: 3px solid rgba(232,120,95,.25); outline-offset: 2px; }
 
 .home-footer { display: flex; justify-content: space-between; padding: 28px 0 35px; border-top: 1px solid var(--line); color: var(--ink-soft); font-size: 10px; letter-spacing: .04em; }
 .home-footer i { color: var(--coral); font-style: normal; }
@@ -309,7 +308,6 @@ button, a { -webkit-tap-highlight-color: transparent; }
   .progress-grid { grid-template-columns: 1fr 1fr; }
   .progress-card { grid-column: 1 / -1; justify-content: center; }
   .studio-grid { grid-template-columns: 1fr 1fr; }
-  .intention-card { grid-column: 1 / -1; }
 }
 
 @media (max-width: 720px) {
@@ -321,7 +319,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
   .section-heading { align-items: start; gap: 20px; }
   .section-heading > p { display: none; }
   .progress-grid, .studio-grid { grid-template-columns: 1fr; }
-  .progress-card, .intention-card { grid-column: auto; }
+  .progress-card { grid-column: auto; }
   .studio-section { padding-top: 65px; }
   .section-heading--compact { flex-direction: column; }
   .live-note { align-self: flex-start; }
@@ -336,7 +334,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
   .today-card__date > strong { font-size: 64px; }
   .progress-section, .studio-section { padding-block: 65px; }
   .progress-card { justify-content: flex-start; }
-  .month-progress-card, .day-progress-card, .intention-card, .energy-card, .focus-dice-card { padding: 22px; }
+  .month-progress-card, .day-progress-card, .energy-card, .focus-dice-card { padding: 22px; }
   .home-footer { flex-direction: column; gap: 9px; }
 }
 
