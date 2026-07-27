@@ -1,5 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Calendar from '../calendar/Calendar'
+import {
+  WEEKDAY_OPTIONS,
+  dateFromKey,
+  isTaskCompletedOnDate,
+  normalizeRecurrence,
+  recurrenceLabel,
+  taskBaseDateKey,
+  taskOccurrenceId,
+  taskOccursOnDate,
+  weekdayNumber,
+} from '../../utils/taskRecurrence'
 import './SchedulePage.css'
 
 const TASKS_STORAGE_KEY = 'manoong-schedule-tasks'
@@ -30,6 +41,33 @@ const PRIORITY_OPTIONS = [
     label: '不重要 · 不紧急',
     shortLabel: '不重要不紧急',
     hint: '有余力时再做',
+  },
+]
+
+const RECURRENCE_OPTIONS = [
+  {
+    value: 'none',
+    icon: '—',
+    label: '不重复',
+    hint: '仅安排这一次',
+  },
+  {
+    value: 'daily',
+    icon: '日',
+    label: '每天',
+    hint: '每天同一时间',
+  },
+  {
+    value: 'weekly',
+    icon: '周',
+    label: '每周',
+    hint: '每周同一天',
+  },
+  {
+    value: 'custom',
+    icon: '选',
+    label: '自定义',
+    hint: '选择特定工作日',
   },
 ]
 
@@ -76,9 +114,27 @@ function readJson(key, fallback) {
 function normalizeTask(task, index) {
   const start = new Date(task.start)
   const validStart = !Number.isNaN(start.getTime())
+  const baseDateKey = task.date || (validStart ? dateKey(start) : null)
   const createdAt =
     task.createdAt ||
     (validStart ? task.start : new Date(Date.now() + index).toISOString())
+  const recurrence = normalizeRecurrence(task.recurrence, baseDateKey)
+  const completedOccurrences =
+    task.completedOccurrences &&
+    typeof task.completedOccurrences === 'object' &&
+    !Array.isArray(task.completedOccurrences)
+      ? { ...task.completedOccurrences }
+      : {}
+
+  if (
+    recurrence &&
+    task.completed &&
+    baseDateKey &&
+    !completedOccurrences[baseDateKey]
+  ) {
+    completedOccurrences[baseDateKey] =
+      task.completedAt || new Date().toISOString()
+  }
 
   return {
     ...task,
@@ -86,8 +142,10 @@ function normalizeTask(task, index) {
     date: task.date || null,
     hasTime: task.hasTime !== false,
     createdAt,
-    completed: Boolean(task.completed),
-    completedAt: task.completedAt || null,
+    completed: recurrence ? false : Boolean(task.completed),
+    completedAt: recurrence ? null : task.completedAt || null,
+    completedOccurrences,
+    recurrence,
     priority: PRIORITY_OPTIONS.some(
       (option) => option.value === task.priority,
     )
@@ -101,15 +159,6 @@ function readStoredTasks() {
   return Array.isArray(tasks)
     ? tasks.map((task, index) => normalizeTask(task, index))
     : []
-}
-
-function taskOccursOnDate(task, date) {
-  if (task.date) return task.date === dateKey(date)
-
-  const day = startOfDay(date).getTime()
-  const start = startOfDay(new Date(task.start)).getTime()
-  const end = startOfDay(new Date(task.end)).getTime()
-  return day >= start && day <= end
 }
 
 function taskStartValue(task) {
@@ -141,6 +190,18 @@ function PriorityBadge({ priority }) {
     <span className="task-priority-badge" data-priority={priority}>
       <i aria-hidden="true" />
       {details.shortLabel}
+    </span>
+  )
+}
+
+function RepeatBadge({ task }) {
+  const label = recurrenceLabel(task)
+  if (!label) return null
+
+  return (
+    <span className="task-repeat-badge" title={`重复规则：${label}`}>
+      <i aria-hidden="true">↻</i>
+      <span>{label}</span>
     </span>
   )
 }
@@ -340,6 +401,19 @@ function TimeWheel({ label, value, onChange }) {
 
 function TaskModal({ selectedDate, task, onClose, onSaveTask }) {
   const isEditing = Boolean(task)
+  const taskDate = task
+    ? dateFromKey(taskBaseDateKey(task), selectedDate)
+    : selectedDate
+  const baseDateKey = dateKey(taskDate)
+  const initialRecurrence = normalizeRecurrence(
+    task?.recurrence,
+    baseDateKey,
+  )
+  const defaultUntilDate = new Date(
+    taskDate.getFullYear(),
+    taskDate.getMonth() + 1,
+    taskDate.getDate(),
+  )
   const [title, setTitle] = useState(task?.title || '')
   const [hasTime, setHasTime] = useState(task?.hasTime ?? false)
   const [startTime, setStartTime] = useState(() =>
@@ -349,6 +423,20 @@ function TaskModal({ selectedDate, task, onClose, onSaveTask }) {
     timeInputValue(task?.end, '10:00'),
   )
   const [priority, setPriority] = useState(task?.priority || null)
+  const [recurrenceType, setRecurrenceType] = useState(
+    initialRecurrence?.type || 'none',
+  )
+  const [recurrenceWeekdays, setRecurrenceWeekdays] = useState(
+    initialRecurrence?.weekdays?.length
+      ? initialRecurrence.weekdays
+      : [weekdayNumber(taskDate)],
+  )
+  const [recurrenceEnd, setRecurrenceEnd] = useState(
+    initialRecurrence?.until ? 'until' : 'never',
+  )
+  const [recurrenceUntil, setRecurrenceUntil] = useState(
+    initialRecurrence?.until || dateKey(defaultUntilDate),
+  )
   const [error, setError] = useState('')
   const titleInputRef = useRef(null)
 
@@ -371,9 +459,9 @@ function TaskModal({ selectedDate, task, onClose, onSaveTask }) {
   function buildDate(time) {
     const [hours, minutes] = time.split(':').map(Number)
     return new Date(
-      selectedDate.getFullYear(),
-      selectedDate.getMonth(),
-      selectedDate.getDate(),
+      taskDate.getFullYear(),
+      taskDate.getMonth(),
+      taskDate.getDate(),
       hours,
       minutes,
       0,
@@ -393,13 +481,13 @@ function TaskModal({ selectedDate, task, onClose, onSaveTask }) {
 
     const start = hasTime
       ? buildDate(startTime)
-      : startOfDay(selectedDate)
+      : startOfDay(taskDate)
     const end = hasTime
       ? buildDate(endTime)
       : new Date(
-          selectedDate.getFullYear(),
-          selectedDate.getMonth(),
-          selectedDate.getDate(),
+          taskDate.getFullYear(),
+          taskDate.getMonth(),
+          taskDate.getDate(),
           23,
           59,
           59,
@@ -411,18 +499,65 @@ function TaskModal({ selectedDate, task, onClose, onSaveTask }) {
     }
 
     const now = new Date().toISOString()
+    const recurrence =
+      recurrenceType === 'none'
+        ? null
+        : normalizeRecurrence(
+            {
+              type: recurrenceType,
+              weekdays: recurrenceWeekdays,
+              until: recurrenceEnd === 'until' ? recurrenceUntil : null,
+            },
+            baseDateKey,
+          )
+
+    if (
+      recurrenceType !== 'none' &&
+      recurrenceEnd === 'until' &&
+      (!recurrenceUntil || recurrenceUntil < baseDateKey)
+    ) {
+      setError('重复截止日期不能早于任务开始日期')
+      return
+    }
+
+    if (
+      recurrenceType === 'custom' &&
+      recurrenceWeekdays.length === 0
+    ) {
+      setError('请至少选择一个重复工作日')
+      return
+    }
+
+    let completed = Boolean(task?.completed)
+    let completedAt = task?.completedAt || null
+    let completedOccurrences = { ...(task?.completedOccurrences || {}) }
+
+    if (recurrence) {
+      if (!initialRecurrence && completed) {
+        completedOccurrences[baseDateKey] = completedAt || now
+      }
+      completed = false
+      completedAt = null
+    } else if (initialRecurrence) {
+      completedAt = completedOccurrences[baseDateKey] || null
+      completed = Boolean(completedAt)
+      completedOccurrences = {}
+    }
+
     onSaveTask({
       ...task,
       id: task?.id || `${Date.now()}-${Math.random().toString(16).slice(2)}`,
       title: cleanTitle,
-      date: dateKey(selectedDate),
+      date: baseDateKey,
       hasTime,
       start: start.toISOString(),
       end: end.toISOString(),
       priority,
+      recurrence,
       createdAt: task?.createdAt || now,
-      completed: task?.completed || false,
-      completedAt: task?.completedAt || null,
+      completed,
+      completedAt,
+      completedOccurrences,
     })
   }
 
@@ -444,11 +579,16 @@ function TaskModal({ selectedDate, task, onClose, onSaveTask }) {
         <header className="schedule-modal__header">
           <div>
             <p>
-              {isEditing ? 'EDIT TASK' : 'NEW TASK'} · {selectedDate.getMonth() + 1}/{selectedDate.getDate()}
+              {isEditing ? 'EDIT TASK' : 'NEW TASK'} · {taskDate.getMonth() + 1}/{taskDate.getDate()}
             </p>
             <h2 id="task-modal-title">
               {isEditing ? '修改任务安排' : '安排一件想完成的事'}
             </h2>
+            {isEditing && initialRecurrence && (
+              <small className="schedule-modal__series-note">
+                修改会应用到整组重复任务
+              </small>
+            )}
           </div>
           <button type="button" onClick={onClose} aria-label="关闭">×</button>
         </header>
@@ -519,6 +659,135 @@ function TaskModal({ selectedDate, task, onClose, onSaveTask }) {
           </div>
         )}
 
+        <fieldset className="recurrence-picker">
+          <legend>
+            重复安排 <span>选填</span>
+          </legend>
+          <div className="recurrence-picker__modes">
+            {RECURRENCE_OPTIONS.map((option) => (
+              <button
+                type="button"
+                key={option.value}
+                className={recurrenceType === option.value ? 'is-active' : ''}
+                aria-pressed={recurrenceType === option.value}
+                onClick={() => {
+                  setRecurrenceType(option.value)
+                  setError('')
+                }}
+              >
+                <i aria-hidden="true">{option.icon}</i>
+                <span>
+                  <strong>
+                    {option.value === 'weekly'
+                      ? `每${WEEKDAY_OPTIONS.find(
+                          (day) => day.value === weekdayNumber(taskDate),
+                        )?.fullLabel}`
+                      : option.label}
+                  </strong>
+                  <small>{option.hint}</small>
+                </span>
+              </button>
+            ))}
+          </div>
+
+          {recurrenceType !== 'none' && (
+            <div className="recurrence-settings">
+              {recurrenceType === 'custom' && (
+                <div className="weekday-picker">
+                  <div>
+                    <strong>选择重复日</strong>
+                    <small>至少保留一天</small>
+                  </div>
+                  <div role="group" aria-label="选择重复工作日">
+                    {WEEKDAY_OPTIONS.map((weekday) => {
+                      const isSelected = recurrenceWeekdays.includes(
+                        weekday.value,
+                      )
+                      return (
+                        <button
+                          type="button"
+                          key={weekday.value}
+                          className={isSelected ? 'is-active' : ''}
+                          aria-pressed={isSelected}
+                          aria-label={weekday.fullLabel}
+                          onClick={() => {
+                            setRecurrenceWeekdays((currentWeekdays) => {
+                              if (
+                                currentWeekdays.includes(weekday.value)
+                              ) {
+                                return currentWeekdays.length === 1
+                                  ? currentWeekdays
+                                  : currentWeekdays.filter(
+                                      (day) => day !== weekday.value,
+                                    )
+                              }
+                              return [...currentWeekdays, weekday.value].sort(
+                                (dayA, dayB) => dayA - dayB,
+                              )
+                            })
+                            setError('')
+                          }}
+                        >
+                          {weekday.label}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
+              <div className="recurrence-end">
+                <div>
+                  <strong>何时结束</strong>
+                  <small>可持续重复，也可设定截止日期</small>
+                </div>
+                <div className="recurrence-end__controls">
+                  <button
+                    type="button"
+                    className={recurrenceEnd === 'never' ? 'is-active' : ''}
+                    onClick={() => setRecurrenceEnd('never')}
+                  >
+                    持续重复
+                  </button>
+                  <button
+                    type="button"
+                    className={recurrenceEnd === 'until' ? 'is-active' : ''}
+                    onClick={() => setRecurrenceEnd('until')}
+                  >
+                    截止日期
+                  </button>
+                  {recurrenceEnd === 'until' && (
+                    <input
+                      type="date"
+                      min={baseDateKey}
+                      value={recurrenceUntil}
+                      aria-label="重复截止日期"
+                      onChange={(event) => {
+                        setRecurrenceUntil(event.target.value)
+                        setError('')
+                      }}
+                    />
+                  )}
+                </div>
+              </div>
+              <p className="recurrence-settings__summary">
+                <span aria-hidden="true">↻</span>
+                {recurrenceLabel({
+                  date: baseDateKey,
+                  start: startTime,
+                  recurrence: {
+                    type: recurrenceType,
+                    weekdays: recurrenceWeekdays,
+                    until:
+                      recurrenceEnd === 'until' ? recurrenceUntil : null,
+                  },
+                })}
+                {hasTime ? `，固定在 ${startTime} 开始` : '，当天灵活安排'}
+              </p>
+            </div>
+          )}
+        </fieldset>
+
         <fieldset className="priority-picker">
           <legend>
             重要与紧急程度 <span>选填</span>
@@ -582,8 +851,13 @@ function DeleteTaskModal({ task, onCancel, onConfirm }) {
     <div className="schedule-modal-backdrop">
       <section className="schedule-delete" role="alertdialog" aria-modal="true">
         <span className="schedule-delete__icon">×</span>
-        <h2>删除这项任务？</h2>
-        <p>“{task.title}”删除后将无法恢复。</p>
+        <h2>{task.recurrence ? '删除整组重复任务？' : '删除这项任务？'}</h2>
+        <p>
+          “{task.title}”
+          {task.recurrence
+            ? '的所有重复安排与完成记录都会被删除。'
+            : '删除后将无法恢复。'}
+        </p>
         <div>
           <button ref={cancelButtonRef} type="button" onClick={onCancel}>保留任务</button>
           <button type="button" onClick={onConfirm}>确认删除</button>
@@ -593,15 +867,15 @@ function DeleteTaskModal({ task, onCancel, onConfirm }) {
   )
 }
 
-function TaskCheck({ task, onToggle }) {
+function TaskCheck({ task, completed, onToggle }) {
   return (
     <button
       type="button"
-      className={`task-check ${task.completed ? 'is-complete' : ''}`}
-      aria-label={`${task.completed ? '恢复' : '完成'}任务：${task.title}`}
+      className={`task-check ${completed ? 'is-complete' : ''}`}
+      aria-label={`${completed ? '恢复' : '完成'}任务：${task.title}`}
       onClick={() => onToggle(task)}
     >
-      {task.completed ? '✓' : ''}
+      {completed ? '✓' : ''}
     </button>
   )
 }
@@ -650,7 +924,9 @@ function SchedulePage() {
     [selectedTasks],
   )
 
-  const completedCount = selectedTasks.filter((task) => task.completed).length
+  const completedCount = selectedTasks.filter((task) =>
+    isTaskCompletedOnDate(task, selectedDate),
+  ).length
   const selectedStats = dailyStats[dateKey(selectedDate)] || {}
   const completionPercent = selectedTasks.length
     ? Math.round((completedCount / selectedTasks.length) * 100)
@@ -675,31 +951,62 @@ function SchedulePage() {
   }
 
   function toggleTask(task) {
-    const nextCompleted = !task.completed
+    const recurrence = normalizeRecurrence(
+      task.recurrence,
+      taskBaseDateKey(task),
+    )
+    const nextCompleted = !isTaskCompletedOnDate(task, selectedDate)
     const completedAt = nextCompleted ? new Date().toISOString() : null
+    const occurrenceKey = dateKey(selectedDate)
+    const previousCompletedAt = recurrence
+      ? task.completedOccurrences?.[occurrenceKey]
+      : task.completedAt
+    const statsId = taskOccurrenceId(task, selectedDate)
 
     setTasks((currentTasks) =>
-      currentTasks.map((currentTask) =>
-        currentTask.id === task.id
-          ? { ...currentTask, completed: nextCompleted, completedAt }
-          : currentTask,
-      ),
+      currentTasks.map((currentTask) => {
+        if (currentTask.id !== task.id) return currentTask
+        if (!recurrence) {
+          return { ...currentTask, completed: nextCompleted, completedAt }
+        }
+
+        const completedOccurrences = {
+          ...(currentTask.completedOccurrences || {}),
+        }
+        if (nextCompleted) completedOccurrences[occurrenceKey] = completedAt
+        else delete completedOccurrences[occurrenceKey]
+
+        return { ...currentTask, completedOccurrences }
+      }),
     )
 
     setDailyStats((currentStats) => {
       const stats = { ...currentStats }
       const completionDate = nextCompleted
         ? new Date()
-        : new Date(task.completedAt || Date.now())
+        : new Date(previousCompletedAt || Date.now())
       const key = dateKey(completionDate)
       const day = { ...(stats[key] || {}) }
       const ids = new Set(day.completedTaskIds || [])
+      const previousCount = Math.max(
+        Number(day.completedCount) || 0,
+        ids.size,
+      )
+      const alreadyRecorded = ids.has(statsId)
 
-      if (nextCompleted) ids.add(task.id)
-      else ids.delete(task.id)
+      if (nextCompleted) ids.add(statsId)
+      else ids.delete(statsId)
 
       day.completedTaskIds = [...ids]
-      day.completedCount = ids.size
+      day.completedCount = Math.max(
+        0,
+        previousCount +
+          (nextCompleted && !alreadyRecorded
+            ? 1
+            : !nextCompleted && alreadyRecorded
+              ? -1
+              : 0),
+      )
       stats[key] = day
       localStorage.setItem(DAILY_STATS_KEY, JSON.stringify(stats))
       return stats
@@ -712,36 +1019,49 @@ function SchedulePage() {
       currentTasks.filter((task) => task.id !== taskToDelete.id),
     )
 
-    if (taskToDelete.completedAt) {
-      setDailyStats((currentStats) => {
-        const stats = { ...currentStats }
-        const key = dateKey(new Date(taskToDelete.completedAt))
-        const day = { ...(stats[key] || {}) }
-        day.completedTaskIds = (day.completedTaskIds || []).filter(
-          (id) => id !== taskToDelete.id,
-        )
-        day.completedCount = day.completedTaskIds.length
-        stats[key] = day
-        localStorage.setItem(DAILY_STATS_KEY, JSON.stringify(stats))
-        return stats
-      })
-    }
+    setDailyStats((currentStats) => {
+      const stats = Object.fromEntries(
+        Object.entries(currentStats).map(([key, currentDay]) => {
+          if (!Array.isArray(currentDay.completedTaskIds)) {
+            return [key, currentDay]
+          }
+
+          const day = { ...currentDay }
+          const previousIds = day.completedTaskIds
+          day.completedTaskIds = previousIds.filter(
+            (id) =>
+              id !== taskToDelete.id &&
+              !id.startsWith(`${taskToDelete.id}::`),
+          )
+          const removedCount = previousIds.length - day.completedTaskIds.length
+          day.completedCount = Math.max(
+            0,
+            (Number(day.completedCount) || previousIds.length) - removedCount,
+          )
+          return [key, day]
+        }),
+      )
+      localStorage.setItem(DAILY_STATS_KEY, JSON.stringify(stats))
+      return stats
+    })
     setTaskToDelete(null)
   }
 
   function renderFlexibleTask(task, index) {
+    const completed = isTaskCompletedOnDate(task, selectedDate)
     return (
       <article
-        className={`flex-task ${task.completed ? 'is-complete' : ''}`}
+        className={`flex-task ${completed ? 'is-complete' : ''}`}
         data-priority={task.priority || undefined}
         key={task.id}
       >
-        <TaskCheck task={task} onToggle={toggleTask} />
+        <TaskCheck task={task} completed={completed} onToggle={toggleTask} />
         <span className="flex-task__order">{padNumber(index + 1)}</span>
         <div className="task-copy">
           <h4>{task.title}</h4>
           <div className="task-meta">
-            <p>{task.completed ? '已完成' : '按创建顺序排列'}</p>
+            <p>{completed ? '本次已完成' : '按创建顺序排列'}</p>
+            <RepeatBadge task={task} />
             <PriorityBadge priority={task.priority} />
           </div>
         </div>
@@ -768,20 +1088,22 @@ function SchedulePage() {
   }
 
   function renderTimedTask(task) {
+    const completed = isTaskCompletedOnDate(task, selectedDate)
     return (
       <article
-        className={`timeline-task ${task.completed ? 'is-complete' : ''}`}
+        className={`timeline-task ${completed ? 'is-complete' : ''}`}
         data-priority={task.priority || undefined}
         key={task.id}
       >
         <time>{taskTimeLabel(task).split(' — ')[0]}</time>
         <span className="timeline-task__node" />
         <div className="timeline-task__card">
-          <TaskCheck task={task} onToggle={toggleTask} />
+          <TaskCheck task={task} completed={completed} onToggle={toggleTask} />
           <div className="task-copy">
             <h4>{task.title}</h4>
             <div className="task-meta">
               <p>{taskTimeLabel(task)}</p>
+              <RepeatBadge task={task} />
               <PriorityBadge priority={task.priority} />
             </div>
           </div>

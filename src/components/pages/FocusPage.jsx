@@ -1,4 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
+import {
+  localDateKey,
+  nextTaskOccurrence,
+  recurrenceLabel,
+} from '../../utils/taskRecurrence'
 import './FocusPage.css'
 
 const TASKS_STORAGE_KEY = 'manoong-schedule-tasks'
@@ -9,15 +14,19 @@ const MIN_SAVED_FOCUS_SECONDS = 5 * 60
 
 const pad = (value) => String(Math.max(0, value)).padStart(2, '0')
 
-function localDateKey(date = new Date()) {
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
-}
-
 function recordFocusTime(totalSeconds) {
-  if (totalSeconds < MIN_SAVED_FOCUS_SECONDS) return
+  if (totalSeconds < MIN_SAVED_FOCUS_SECONDS) return false
 
   try {
-    const stats = JSON.parse(localStorage.getItem(DAILY_STATS_KEY) || '{}')
+    const storedStats = JSON.parse(
+      localStorage.getItem(DAILY_STATS_KEY) || '{}',
+    )
+    const stats =
+      storedStats &&
+      typeof storedStats === 'object' &&
+      !Array.isArray(storedStats)
+        ? storedStats
+        : {}
     const key = localDateKey()
     const day = { ...(stats[key] || {}) }
     day.focusSeconds = (Number(day.focusSeconds) || 0) + totalSeconds
@@ -25,8 +34,10 @@ function recordFocusTime(totalSeconds) {
     day.lastFocusedAt = new Date().toISOString()
     stats[key] = day
     localStorage.setItem(DAILY_STATS_KEY, JSON.stringify(stats))
+    return true
   } catch {
     // A disabled or full browser store should never prevent ending a session.
+    return false
   }
 }
 
@@ -48,14 +59,22 @@ function readPreferences() {
 }
 
 function formatTaskDate(task) {
-  const date = new Date(task.start)
+  const date = new Date(task.occurrenceStart || task.start)
   const today = new Date()
   const isToday =
     date.getFullYear() === today.getFullYear() &&
     date.getMonth() === today.getMonth() &&
     date.getDate() === today.getDate()
 
-  return `${isToday ? '今天' : `${date.getMonth() + 1}月${date.getDate()}日`} · ${pad(date.getHours())}:${pad(date.getMinutes())}`
+  const dayLabel = isToday
+    ? '今天'
+    : `${date.getMonth() + 1}月${date.getDate()}日`
+  const timeLabel = task.hasTime
+    ? `${pad(date.getHours())}:${pad(date.getMinutes())}`
+    : '灵活安排'
+  const repeatLabel = recurrenceLabel(task)
+
+  return `${dayLabel} · ${timeLabel}${repeatLabel ? ` · ${repeatLabel}` : ''}`
 }
 
 function FlipPair({ value, label, tick }) {
@@ -412,16 +431,158 @@ function FocusTimer({
   )
 }
 
+const CELEBRATION_COLORS = [
+  '#2c8e89',
+  '#756bc4',
+  '#e6a84c',
+  '#e27873',
+  '#78b88d',
+]
+
+function FocusCelebration({
+  minutes,
+  taskTitle,
+  automatic,
+  onComplete,
+}) {
+  const completedRef = useRef(false)
+  const actionRef = useRef(null)
+  const confetti = Array.from({ length: 24 }, (_, index) => {
+    const angle = (Math.PI * 2 * index) / 24
+    const distance = 150 + (index % 4) * 34
+    return {
+      id: index,
+      style: {
+        '--celebration-x': `${Math.cos(angle) * distance}px`,
+        '--celebration-y': `${Math.sin(angle) * distance}px`,
+        '--celebration-rotation': `${140 + index * 37}deg`,
+        '--celebration-delay': `${(index % 6) * 45}ms`,
+        '--celebration-color':
+          CELEBRATION_COLORS[index % CELEBRATION_COLORS.length],
+      },
+    }
+  })
+
+  function finishCelebration() {
+    if (completedRef.current) return
+    completedRef.current = true
+    onComplete()
+  }
+
+  useEffect(() => {
+    document.body.classList.add('focus-celebration-open')
+    actionRef.current?.focus()
+    const prefersReducedMotion = window.matchMedia(
+      '(prefers-reduced-motion: reduce)',
+    ).matches
+    const timer = window.setTimeout(
+      finishCelebration,
+      prefersReducedMotion ? 1400 : 3800,
+    )
+
+    return () => {
+      document.body.classList.remove('focus-celebration-open')
+      window.clearTimeout(timer)
+    }
+  })
+
+  return (
+    <section
+      className="focus-celebration"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="focus-celebration-title"
+    >
+      <div className="focus-celebration__glow focus-celebration__glow--one" />
+      <div className="focus-celebration__glow focus-celebration__glow--two" />
+
+      <div className="focus-celebration__confetti" aria-hidden="true">
+        {confetti.map((piece) => (
+          <i key={piece.id} style={piece.style} />
+        ))}
+      </div>
+
+      <div className="focus-celebration__content">
+        <div className="focus-celebration__mark" aria-hidden="true">
+          <span>✓</span>
+          <i />
+          <i />
+        </div>
+        <p className="focus-celebration__eyebrow">FOCUS SAVED</p>
+        <h1 id="focus-celebration-title">这段专注，值得庆祝</h1>
+        <p className="focus-celebration__message">
+          {automatic
+            ? '你完整走完了设定的节奏。'
+            : '你为重要的事情留出了一段不被打扰的时间。'}
+        </p>
+
+        <div className="focus-celebration__result">
+          <strong>{minutes}</strong>
+          <span>
+            分钟
+            <small>已计入今天的专注记录</small>
+          </span>
+        </div>
+
+        {taskTitle && (
+          <div className="focus-celebration__task">
+            <span aria-hidden="true">✦</span>
+            <p>
+              本次专注
+              <strong>{taskTitle}</strong>
+            </p>
+          </div>
+        )}
+
+        <button
+          ref={actionRef}
+          type="button"
+          onClick={finishCelebration}
+        >
+          收下这份专注
+          <span aria-hidden="true">→</span>
+        </button>
+        <small className="focus-celebration__hint">
+          动画结束后将自动返回
+        </small>
+      </div>
+    </section>
+  )
+}
+
 function FocusPage() {
   const [preferences] = useState(() => readPreferences())
   const [tasks] = useState(() => {
     const cutoff = Date.now() - 86400000
+    const today = new Date()
     return readTasks()
-      .filter(
-        (task) =>
-          !task.completed && new Date(task.end).getTime() > cutoff,
+      .flatMap((task) => {
+        if (task.recurrence) {
+          const occurrence = nextTaskOccurrence(task, today)
+          if (!occurrence) return []
+          return [
+            {
+              ...task,
+              occurrenceStart: occurrence.toISOString(),
+              focusOptionId: `${task.id}::${localDateKey(occurrence)}`,
+            },
+          ]
+        }
+
+        if (
+          task.completed ||
+          new Date(task.end).getTime() <= cutoff
+        ) {
+          return []
+        }
+
+        return [{ ...task, focusOptionId: task.id }]
+      })
+      .sort(
+        (taskA, taskB) =>
+          new Date(taskA.occurrenceStart || taskA.start) -
+          new Date(taskB.occurrenceStart || taskB.start),
       )
-      .sort((a, b) => new Date(a.start) - new Date(b.start))
   })
   const [mode, setMode] = useState(preferences.mode || 'up')
   const [selectedTaskId, setSelectedTaskId] = useState('')
@@ -436,8 +597,11 @@ function FocusPage() {
   )
   const [session, setSession] = useState(null)
   const [summary, setSummary] = useState(null)
+  const [celebration, setCelebration] = useState(null)
 
-  const selectedTask = tasks.find((task) => task.id === selectedTaskId)
+  const selectedTask = tasks.find(
+    (task) => task.focusOptionId === selectedTaskId,
+  )
 
   function changeDuration(delta) {
     setDurationMinutes((current) =>
@@ -463,7 +627,15 @@ function FocusPage() {
       }),
     )
     setSummary(null)
+    setCelebration(null)
     setSession(nextSession)
+  }
+
+  function leaveFocus(exitSource) {
+    window.setTimeout(() => {
+      if (exitSource === 'back') window.history.go(-2)
+      else window.history.back()
+    }, 0)
   }
 
   function finishFocus(
@@ -471,24 +643,45 @@ function FocusPage() {
     automatic = false,
     exitSource = 'automatic',
   ) {
-    const saved = totalSeconds >= MIN_SAVED_FOCUS_SECONDS
-    if (saved) recordFocusTime(totalSeconds)
-    setSession(null)
-    setSummary({
+    const eligible = totalSeconds >= MIN_SAVED_FOCUS_SECONDS
+    const saved = eligible ? recordFocusTime(totalSeconds) : false
+    const result = {
       minutes: Math.max(0, Math.floor(totalSeconds / 60)),
       automatic,
       saved,
-    })
+      saveFailed: eligible && !saved,
+      exitSource,
+      taskTitle: session?.task?.title || '',
+    }
+    setSession(null)
     if (document.fullscreenElement) document.exitFullscreen().catch(() => {})
 
-    window.setTimeout(() => {
-      if (exitSource === 'back') window.history.go(-2)
-      else window.history.back()
-    }, 0)
+    if (saved) {
+      setCelebration(result)
+      return
+    }
+
+    setSummary(result)
+    leaveFocus(exitSource)
   }
 
   if (session) {
     return <FocusTimer {...session} onFinish={finishFocus} />
+  }
+
+  if (celebration) {
+    return (
+      <FocusCelebration
+        minutes={celebration.minutes}
+        taskTitle={celebration.taskTitle}
+        automatic={celebration.automatic}
+        onComplete={() => {
+          setSummary(celebration)
+          setCelebration(null)
+          leaveFocus(celebration.exitSource)
+        }}
+      />
+    )
   }
 
   return (
@@ -519,14 +712,18 @@ function FocusPage() {
             <span>✓</span>
             <div>
               <strong>
-                {summary.saved
+                {summary.saveFailed
+                  ? '这段专注暂时没能保存'
+                  : summary.saved
                   ? summary.automatic
                     ? '本轮专注已自动完成'
                     : '这段专注已收好'
                   : '短暂离开也没关系'}
               </strong>
               <p>
-                {summary.saved
+                {summary.saveFailed
+                  ? '浏览器存储当前不可用，请稍后再试。'
+                  : summary.saved
                   ? `你为重要的事投入了 ${summary.minutes} 分钟，做得很好。`
                   : '这次不足 5 分钟，没有计入统计。准备好时，我们再开始。'}
               </p>
@@ -566,10 +763,10 @@ function FocusPage() {
                 <button
                   type="button"
                   role="radio"
-                  aria-checked={selectedTaskId === task.id}
-                  className={selectedTaskId === task.id ? 'is-selected' : ''}
-                  onClick={() => setSelectedTaskId(task.id)}
-                  key={task.id}
+                  aria-checked={selectedTaskId === task.focusOptionId}
+                  className={selectedTaskId === task.focusOptionId ? 'is-selected' : ''}
+                  onClick={() => setSelectedTaskId(task.focusOptionId)}
+                  key={task.focusOptionId}
                 >
                   <span className="task-option__icon task-option__icon--task">✓</span>
                   <span>

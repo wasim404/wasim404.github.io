@@ -1,9 +1,17 @@
 import { useEffect, useMemo, useState } from 'react'
+import {
+  isTaskCompletedOnDate,
+  taskOccursOnDate,
+} from '../../utils/taskRecurrence'
 import './AboutPage.css'
 
 const DAILY_STATS_KEY = 'manoong-daily-stats'
 const TASKS_STORAGE_KEY = 'manoong-schedule-tasks'
 const REFLECTIONS_STORAGE_KEY = 'manoong-daily-reflections'
+const FOCUS_GOAL_STORAGE_KEY = 'manoong-focus-goal-minutes'
+const MIN_FOCUS_GOAL_MINUTES = 30
+const MAX_FOCUS_GOAL_MINUTES = 12 * 60
+const DEFAULT_FOCUS_GOAL_MINUTES = 2 * 60
 
 const pad = (value) => String(value).padStart(2, '0')
 
@@ -20,27 +28,43 @@ function readJson(key, fallback) {
   }
 }
 
-function taskOccursToday(task, today) {
-  if (task.date) return task.date === dateKey(today)
+function readFocusGoal() {
+  try {
+    const storedValue = localStorage.getItem(FOCUS_GOAL_STORAGE_KEY)
+    if (storedValue === null) return DEFAULT_FOCUS_GOAL_MINUTES
+    const storedGoal = Number(storedValue)
+    if (!Number.isFinite(storedGoal)) return DEFAULT_FOCUS_GOAL_MINUTES
+    return Math.min(
+      MAX_FOCUS_GOAL_MINUTES,
+      Math.max(MIN_FOCUS_GOAL_MINUTES, Math.round(storedGoal / 30) * 30),
+    )
+  } catch {
+    return DEFAULT_FOCUS_GOAL_MINUTES
+  }
+}
 
-  const day = new Date(
-    today.getFullYear(),
-    today.getMonth(),
-    today.getDate(),
-  ).getTime()
-  const startDate = new Date(task.start)
-  const endDate = new Date(task.end)
-  const start = new Date(
-    startDate.getFullYear(),
-    startDate.getMonth(),
-    startDate.getDate(),
-  ).getTime()
-  const end = new Date(
-    endDate.getFullYear(),
-    endDate.getMonth(),
-    endDate.getDate(),
-  ).getTime()
-  return day >= start && day <= end
+function formatGoalDuration(minutes) {
+  if (minutes < 60) return `${minutes} 分钟`
+  const hours = Math.floor(minutes / 60)
+  const remainder = minutes % 60
+  return remainder ? `${hours} 小时 ${remainder} 分钟` : `${hours} 小时`
+}
+
+function taskCompletionsRecordedOn(task, key) {
+  let count =
+    task.completedAt && dateKey(new Date(task.completedAt)) === key ? 1 : 0
+
+  if (
+    task.completedOccurrences &&
+    typeof task.completedOccurrences === 'object'
+  ) {
+    count += Object.values(task.completedOccurrences).filter(
+      (completedAt) =>
+        completedAt && dateKey(new Date(completedAt)) === key,
+    ).length
+  }
+
+  return count
 }
 
 function formatFocusTime(totalSeconds) {
@@ -187,10 +211,10 @@ function MonthReview({ reflections, dailyStats, tasks, today }) {
     const key = `${monthPrefix}${pad(day)}`
     const dayStats = dailyStats[key] || {}
     const completedFromTasks = Array.isArray(tasks)
-      ? tasks.filter(
-          (task) =>
-            task.completedAt && dateKey(new Date(task.completedAt)) === key,
-        ).length
+      ? tasks.reduce(
+          (total, task) => total + taskCompletionsRecordedOn(task, key),
+          0,
+        )
       : 0
 
     return {
@@ -233,7 +257,7 @@ function MonthReview({ reflections, dailyStats, tasks, today }) {
       <header className="section-heading">
         <div>
           <p>MONTHLY VIEW</p>
-          <h2>这个月的情绪天气</h2>
+          <h2>情绪天气</h2>
         </div>
         <span>仅统计完成复盘的日期</span>
       </header>
@@ -427,28 +451,60 @@ function AboutPage() {
   const [saveState, setSaveState] = useState(
     existingReflection ? 'saved' : 'idle',
   )
+  const [focusGoalMinutes, setFocusGoalMinutes] = useState(readFocusGoal)
 
   const todayStats = stats[todayKey] || {}
   const todayTasks = Array.isArray(tasks)
-    ? tasks.filter((task) => taskOccursToday(task, today))
+    ? tasks.filter((task) => taskOccursOnDate(task, today))
     : []
-  const completedFromTasks = todayTasks.filter((task) => task.completed).length
+  const completedFromTasks = todayTasks.filter((task) =>
+    isTaskCompletedOnDate(task, today),
+  ).length
   const completedCount = Math.max(
     Number(todayStats.completedCount) || 0,
     completedFromTasks,
   )
-  const focusSeconds = Number(todayStats.focusSeconds) || 0
+  const focusSeconds = Math.max(0, Number(todayStats.focusSeconds) || 0)
   const focusTime = formatFocusTime(focusSeconds)
+  const focusGoalSeconds = focusGoalMinutes * 60
+  const focusGoalPercent = Math.min(
+    100,
+    Math.round((focusSeconds / focusGoalSeconds) * 100),
+  )
+  const remainingFocusSeconds = Math.max(0, focusGoalSeconds - focusSeconds)
+  const focusGoalRangePercent =
+    ((focusGoalMinutes - MIN_FOCUS_GOAL_MINUTES) /
+      (MAX_FOCUS_GOAL_MINUTES - MIN_FOCUS_GOAL_MINUTES)) *
+    100
   const completionPercent = todayTasks.length
     ? Math.min(100, Math.round((completedFromTasks / todayTasks.length) * 100))
     : 0
-  const focusBlocks = Math.min(12, Math.ceil(focusSeconds / 600))
 
   useEffect(() => {
     if (reviewStep !== 'feedback') return undefined
     const timer = window.setTimeout(() => setReviewStep('write'), 2400)
     return () => window.clearTimeout(timer)
   }, [reviewStep])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        FOCUS_GOAL_STORAGE_KEY,
+        String(focusGoalMinutes),
+      )
+    } catch {
+      // The control still works for this visit when browser storage is blocked.
+    }
+  }, [focusGoalMinutes])
+
+  function changeFocusGoal(nextGoal) {
+    setFocusGoalMinutes(
+      Math.min(
+        MAX_FOCUS_GOAL_MINUTES,
+        Math.max(MIN_FOCUS_GOAL_MINUTES, Number(nextGoal) || 0),
+      ),
+    )
+  }
 
   function chooseScore(nextScore) {
     setScore(nextScore)
@@ -510,20 +566,66 @@ function AboutPage() {
             <article className="metric-card metric-card--focus">
               <div
                 className="metric-orbit"
-                style={{ '--metric-progress': `${Math.min(100, (focusSeconds / 7200) * 100)}%` }}
+                style={{ '--metric-progress': `${focusGoalPercent}%` }}
+                role="img"
+                aria-label={`今日专注目标完成 ${focusGoalPercent}%`}
               >
-                <span>◷</span>
+                <span className="metric-orbit__percent">
+                  <strong>{focusGoalPercent}</strong>
+                  <small>%</small>
+                </span>
               </div>
               <div className="metric-card__content">
                 <p>今日专注</p>
                 <strong>{focusTime.primary}<small>{focusTime.unit}</small></strong>
-                <span>{focusTime.detail}</span>
-                <div className="focus-blocks" aria-label={`共专注 ${Math.floor(focusSeconds / 60)} 分钟`}>
-                  {Array.from({ length: 12 }, (_, index) => (
-                    <i className={index < focusBlocks ? 'is-filled' : ''} key={index} />
-                  ))}
+                <span>
+                  {focusGoalPercent >= 100
+                    ? `今日目标已完成 · 目标 ${formatGoalDuration(focusGoalMinutes)}`
+                    : focusSeconds > 0
+                      ? `距离目标还差 ${formatGoalDuration(
+                          Math.ceil(remainingFocusSeconds / 60),
+                        )}`
+                      : `从第一段专注开始 · 目标 ${formatGoalDuration(focusGoalMinutes)}`}
+                </span>
+
+                <div className="focus-goal-control">
+                  <div className="focus-goal-control__head">
+                    <span>今日目标</span>
+                    <strong>{formatGoalDuration(focusGoalMinutes)}</strong>
+                  </div>
+                  <div className="focus-goal-control__adjust">
+                    <button
+                      type="button"
+                      onClick={() => changeFocusGoal(focusGoalMinutes - 30)}
+                      disabled={focusGoalMinutes === MIN_FOCUS_GOAL_MINUTES}
+                      aria-label="目标减少30分钟"
+                    >
+                      −
+                    </button>
+                    <input
+                      type="range"
+                      min={MIN_FOCUS_GOAL_MINUTES}
+                      max={MAX_FOCUS_GOAL_MINUTES}
+                      step="30"
+                      value={focusGoalMinutes}
+                      style={{
+                        '--goal-range-progress': `${focusGoalRangePercent}%`,
+                      }}
+                      aria-label="设置今日专注目标"
+                      aria-valuetext={formatGoalDuration(focusGoalMinutes)}
+                      onChange={(event) => changeFocusGoal(event.target.value)}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => changeFocusGoal(focusGoalMinutes + 30)}
+                      disabled={focusGoalMinutes === MAX_FOCUS_GOAL_MINUTES}
+                      aria-label="目标增加30分钟"
+                    >
+                      ＋
+                    </button>
+                  </div>
+                  <small>可设置 30 分钟至 12 小时，每次调整 30 分钟</small>
                 </div>
-                <small>每格代表约 10 分钟</small>
               </div>
             </article>
 

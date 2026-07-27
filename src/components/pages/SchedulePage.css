@@ -371,6 +371,7 @@
   display: flex;
   min-width: 0;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
@@ -400,6 +401,34 @@
   height: 5px;
   border-radius: 50%;
   background: var(--task-priority);
+}
+
+.task-repeat-badge {
+  display: inline-flex;
+  flex: 0 0 auto;
+  max-width: 150px;
+  align-items: center;
+  gap: 4px;
+  margin-top: 3px;
+  padding: 3px 6px;
+  border-radius: 99px;
+  color: #526f68;
+  background: #e3eee8;
+  font-size: 8px;
+  font-weight: 750;
+  line-height: 1;
+}
+
+.task-repeat-badge > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.task-repeat-badge i {
+  color: var(--schedule-green);
+  font-size: 9px;
+  font-style: normal;
 }
 
 .task-check {
@@ -598,10 +627,10 @@
 }
 
 .schedule-modal {
-  width: min(520px, 100%);
+  width: min(580px, 100%);
   max-height: calc(100dvh - 36px);
   overflow-y: auto;
-  padding: 27px;
+  padding: 30px;
   border: 1px solid rgba(255, 255, 255, 0.7);
   border-radius: 27px;
   background: #fffefa;
@@ -619,15 +648,22 @@
 .schedule-modal__header p {
   margin: 0 0 6px;
   color: var(--schedule-green);
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.16em;
 }
 
 .schedule-modal__header h2 {
   margin: 0;
-  font-size: 23px;
+  font-size: 27px;
   letter-spacing: -0.035em;
+}
+
+.schedule-modal__series-note {
+  display: block;
+  margin-top: 6px;
+  color: #81918f;
+  font-size: 11px;
 }
 
 .schedule-modal__header button {
@@ -640,7 +676,7 @@
   color: #809190;
   background: #eef2ef;
   cursor: pointer;
-  font-size: 18px;
+  font-size: 20px;
 }
 
 .schedule-field {
@@ -652,19 +688,19 @@
   display: block;
   margin-bottom: 8px;
   color: #617677;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
 }
 
 .schedule-field input {
   width: 100%;
-  padding: 13px 14px;
+  padding: 14px 15px;
   border: 1px solid #dce4df;
   border-radius: 13px;
   outline: 0;
   color: var(--schedule-ink);
   background: #f7f8f5;
-  font-size: 14px;
+  font-size: 16px;
   transition: 180ms ease;
 }
 
@@ -685,7 +721,7 @@
 .time-choice button {
   display: grid;
   grid-template-columns: 30px 1fr;
-  padding: 13px;
+  padding: 14px;
   border: 1px solid #e0e6e2;
   border-radius: 14px;
   color: #6f8282;
@@ -697,17 +733,17 @@
 .time-choice button > span {
   grid-row: span 2;
   color: #8ca09d;
-  font-size: 17px;
+  font-size: 19px;
 }
 
 .time-choice strong {
   color: #425e60;
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .time-choice small {
   margin-top: 2px;
-  font-size: 9px;
+  font-size: 11px;
 }
 
 .time-choice button.is-active {
@@ -720,6 +756,220 @@
   color: var(--schedule-green);
 }
 
+.recurrence-picker {
+  margin: 19px 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.recurrence-picker > legend {
+  color: #617677;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.recurrence-picker > legend span {
+  margin-left: 5px;
+  padding: 3px 6px;
+  border-radius: 99px;
+  color: #849491;
+  background: #eef2ef;
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.recurrence-picker__modes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.recurrence-picker__modes > button {
+  display: grid;
+  grid-template-columns: 29px minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
+  padding: 12px;
+  border: 1px solid #e0e6e2;
+  border-radius: 13px;
+  color: #6e7e7d;
+  background: #fafbf8;
+  cursor: pointer;
+  text-align: left;
+  transition: 160ms ease;
+}
+
+.recurrence-picker__modes > button:hover {
+  border-color: rgba(71, 139, 118, 0.4);
+  transform: translateY(-1px);
+}
+
+.recurrence-picker__modes > button.is-active {
+  border-color: rgba(71, 139, 118, 0.5);
+  color: var(--schedule-green);
+  background: #eaf3ee;
+  box-shadow: 0 5px 16px rgba(71, 139, 118, 0.08);
+}
+
+.recurrence-picker__modes > button > i {
+  display: grid;
+  width: 29px;
+  height: 29px;
+  place-items: center;
+  border-radius: 9px;
+  color: #738885;
+  background: #edf1ee;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.recurrence-picker__modes > button.is-active > i {
+  color: #ffffff;
+  background: var(--schedule-green);
+}
+
+.recurrence-picker__modes > button > span {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.recurrence-picker__modes strong {
+  color: #425e60;
+  font-size: 13px;
+}
+
+.recurrence-picker__modes small {
+  color: #8b9a98;
+  font-size: 10px;
+}
+
+.recurrence-settings {
+  margin-top: 9px;
+  padding: 13px;
+  border: 1px solid #e2e9e4;
+  border-radius: 15px;
+  background: #f5f7f4;
+  animation: modal-card-in 0.22s ease both;
+}
+
+.weekday-picker > div:first-child,
+.recurrence-end > div:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.weekday-picker strong,
+.recurrence-end strong {
+  color: #526b6c;
+  font-size: 12px;
+}
+
+.weekday-picker small,
+.recurrence-end small {
+  color: #94a19f;
+  font-size: 10px;
+}
+
+.weekday-picker > div:last-child {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 5px;
+  margin-top: 8px;
+}
+
+.weekday-picker button {
+  aspect-ratio: 1;
+  padding: 0;
+  border: 1px solid #dce4df;
+  border-radius: 9px;
+  color: #738582;
+  background: #ffffff;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  transition: 150ms ease;
+}
+
+.weekday-picker button:hover {
+  border-color: var(--schedule-green);
+}
+
+.weekday-picker button.is-active {
+  border-color: var(--schedule-green);
+  color: #ffffff;
+  background: var(--schedule-green);
+  box-shadow: 0 4px 9px rgba(71, 139, 118, 0.18);
+}
+
+.recurrence-end {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #dfe7e2;
+}
+
+.recurrence-end__controls {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.recurrence-end__controls button {
+  padding: 8px 10px;
+  border: 1px solid #dce4df;
+  border-radius: 9px;
+  color: #748582;
+  background: #ffffff;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.recurrence-end__controls button.is-active {
+  border-color: rgba(71, 139, 118, 0.5);
+  color: var(--schedule-green);
+  background: #e6f0eb;
+}
+
+.recurrence-end__controls input {
+  min-width: 0;
+  padding: 7px 9px;
+  border: 1px solid #dce4df;
+  border-radius: 9px;
+  outline: 0;
+  color: #50696a;
+  background: #ffffff;
+  font-family: inherit;
+  font-size: 11px;
+}
+
+.recurrence-end__controls input:focus {
+  border-color: var(--schedule-green);
+  box-shadow: 0 0 0 3px rgba(71, 139, 118, 0.1);
+}
+
+.recurrence-settings__summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 11px 0 0;
+  padding: 8px 9px;
+  border-radius: 10px;
+  color: #587069;
+  background: #e6efea;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.recurrence-settings__summary span {
+  color: var(--schedule-green);
+  font-size: 14px;
+}
+
 .priority-picker {
   margin: 19px 0 0;
   padding: 0;
@@ -728,7 +978,7 @@
 
 .priority-picker legend {
   color: #617677;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
 }
 
@@ -738,14 +988,14 @@
   border-radius: 99px;
   color: #849491;
   background: #eef2ef;
-  font-size: 8px;
+  font-size: 10px;
   font-weight: 650;
 }
 
 .priority-picker > p {
   margin: 5px 0 10px;
   color: #91a09e;
-  font-size: 9px;
+  font-size: 11px;
 }
 
 .priority-picker__grid {
@@ -760,7 +1010,7 @@
   align-items: center;
   gap: 9px;
   min-width: 0;
-  padding: 10px;
+  padding: 12px;
   border: 1px solid #e0e6e2;
   border-radius: 13px;
   color: #6e7e7d;
@@ -798,14 +1048,14 @@
 .priority-picker__grid button strong {
   overflow: hidden;
   color: var(--task-priority-ink);
-  font-size: 10px;
+  font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .priority-picker__grid button small {
   color: #8b9997;
-  font-size: 8px;
+  font-size: 10px;
 }
 
 .priority-picker__grid button > b {
@@ -817,7 +1067,7 @@
   border-radius: 6px;
   color: #ffffff;
   background: transparent;
-  font-size: 9px;
+  font-size: 11px;
 }
 
 .priority-picker__grid button.is-active > b {
@@ -842,12 +1092,12 @@
 
 .schedule-time-wheels__head strong {
   color: #617677;
-  font-size: 11px;
+  font-size: 13px;
 }
 
 .schedule-time-wheels__head > span {
   color: #829492;
-  font-size: 9px;
+  font-size: 11px;
 }
 
 .schedule-time-wheels__body {
@@ -859,7 +1109,7 @@
 
 .schedule-time-wheels__arrow {
   color: #94a5a2;
-  font-size: 13px;
+  font-size: 16px;
   text-align: center;
 }
 
@@ -874,7 +1124,7 @@
   width: 100%;
   margin-bottom: 5px;
   color: #50696a;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 750;
   text-align: center;
 }
@@ -888,7 +1138,7 @@
 
 .time-wheel__colon {
   color: #526d6d;
-  font-size: 17px;
+  font-size: 19px;
   font-weight: 700;
   text-align: center;
 }
@@ -901,7 +1151,7 @@
   display: block;
   margin-bottom: 3px;
   color: #9aa9a6;
-  font-size: 8px;
+  font-size: 10px;
   text-align: center;
 }
 
@@ -982,7 +1232,7 @@
   color: #9aa9a6;
   background: transparent;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 14px;
   font-variant-numeric: tabular-nums;
   scroll-snap-align: center;
   transition: color 0.15s ease, font-size 0.15s ease;
@@ -990,7 +1240,7 @@
 
 .time-wheel-column__scroller button.is-selected {
   color: #294b49;
-  font-size: 15px;
+  font-size: 18px;
   font-weight: 750;
 }
 
@@ -1007,7 +1257,7 @@
 .schedule-modal__error p {
   margin: 0;
   color: #bd574f;
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .schedule-modal__footer {
@@ -1023,7 +1273,7 @@
   color: #667a7b;
   background: transparent;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
 }
 
@@ -1181,6 +1431,14 @@
 
   .time-choice {
     grid-template-columns: 1fr;
+  }
+
+  .recurrence-end__controls {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .recurrence-end__controls input {
+    grid-column: 1 / -1;
   }
 
   .schedule-modal {
