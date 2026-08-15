@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 
 const navItems = [
   {
@@ -28,6 +29,7 @@ const navItems = [
 ]
 
 function Navbar() {
+  const { user, isLoading } = useAuth()
   return (
     <header className="fixed left-0 top-0 z-50 w-full border-b border-[#18392f]/10 bg-[#f7f4ed]/90 backdrop-blur-xl">
       <nav className="mx-auto flex h-[72px] max-w-[1180px] items-center justify-between px-3 sm:h-22 sm:px-6">
@@ -59,10 +61,10 @@ function Navbar() {
         </div>
 
         <NavLink
-          to="/focus"
+          to={user ? '/profile' : '/login'}
           className="hidden rounded-xl border border-[#18392f]/15 px-4 py-2 text-[11px] font-semibold text-[#18392f] transition hover:border-[#77b99f] hover:bg-[#dcece4] sm:block"
         >
-          专注模式 <span className="ml-1 text-[#e8785f]">→</span>
+          {isLoading ? '账户' : user ? '我的账户' : '登录'} <span className="ml-1 text-[#e8785f]">→</span>
         </NavLink>
       </nav>
     </header>

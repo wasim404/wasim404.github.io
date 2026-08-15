@@ -887,6 +887,83 @@
   line-height: 1.8;
 }
 
+.focus-dialog__auto-continue {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 20px;
+  padding: 12px 14px;
+  border: 1px solid rgba(44, 142, 137, 0.12);
+  border-radius: 14px;
+  background: linear-gradient(110deg, rgba(44, 142, 137, 0.075), rgba(117, 107, 196, 0.045));
+  text-align: left;
+}
+
+.focus-dialog__auto-continue > span {
+  position: relative;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  overflow: hidden;
+  border-radius: 50%;
+  background: rgba(44, 142, 137, 0.1);
+}
+
+.focus-dialog__auto-continue > span::before {
+  content: '';
+  position: absolute;
+  inset: 5px;
+  z-index: 1;
+  border-radius: inherit;
+  background: #f8fbfa;
+}
+
+.focus-dialog__auto-continue > span > i {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: conic-gradient(
+    #2c8e89 var(--auto-continue-progress),
+    rgba(44, 142, 137, 0.1) 0
+  );
+  transition: background 0.25s linear;
+}
+
+.focus-dialog__auto-continue > span::after {
+  content: '\2192';
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #2c8e89;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.focus-dialog__auto-continue p {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  color: #5e7676;
+  font-size: 12px;
+}
+
+.focus-dialog__auto-continue p > span {
+  white-space: nowrap;
+}
+
+.focus-dialog__auto-continue strong {
+  color: #2c7773;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.focus-dialog__auto-continue small {
+  color: #879796;
+  font-size: 10px;
+}
+
 .focus-dialog__actions {
   display: grid;
   gap: 8px;

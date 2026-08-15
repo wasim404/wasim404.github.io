@@ -6,6 +6,10 @@ import FocusPage from './components/pages/FocusPage'
 import SchedulePage from './components/pages/SchedulePage'
 import AboutPage from './components/pages/AboutPage'
 import NotFoundPage from './components/pages/NotFoundPage'
+import LoginPage from './components/pages/LoginPage'
+import RegisterPage from './components/pages/RegisterPage'
+import ProfilePage from './components/pages/ProfilePage'
+import ProtectedRoute from './components/auth/ProtectedRoute'
 
 function App() {
   return (
@@ -15,6 +19,11 @@ function App() {
         <Route path="focus" element={<FocusPage />} />
         <Route path="schedule" element={<SchedulePage />} />
         <Route path="about" element={<AboutPage />} />
+        <Route path="login" element={<LoginPage />} />
+        <Route path="register" element={<RegisterPage />} />
+        <Route element={<ProtectedRoute />}>
+          <Route path="profile" element={<ProfilePage />} />
+        </Route>
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

@@ -6,6 +6,7 @@ import {
   recurrenceLabel,
 } from '../../utils/taskRecurrence'
 import './FocusPage.css'
+import { setAccountStorageItem } from '../../services/accountData'
 
 const TASKS_STORAGE_KEY = 'manoong-schedule-tasks'
 const PREFERENCES_STORAGE_KEY = 'manoong-focus-preferences'
@@ -13,6 +14,7 @@ const DAILY_STATS_KEY = 'manoong-daily-stats'
 const ACTIVE_FOCUS_SESSION_KEY = 'manoong-active-focus-session'
 const MAX_SECONDS = 12 * 60 * 60
 const MIN_SAVED_FOCUS_SECONDS = 5 * 60
+const REST_PROMPT_AUTO_CONTINUE_SECONDS = 30
 
 const pad = (value) => String(Math.max(0, value)).padStart(2, '0')
 
@@ -35,7 +37,7 @@ function recordFocusTime(totalSeconds) {
     day.focusSessions = (Number(day.focusSessions) || 0) + 1
     day.lastFocusedAt = new Date().toISOString()
     stats[key] = day
-    localStorage.setItem(DAILY_STATS_KEY, JSON.stringify(stats))
+    setAccountStorageItem(DAILY_STATS_KEY, JSON.stringify(stats))
     return true
   } catch {
     // A disabled or full browser store should never prevent ending a session.
@@ -196,6 +198,9 @@ function FocusTimer({
   const [isPaused, setIsPaused] = useState(Boolean(resumePaused))
   const [showControls, setShowControls] = useState(true)
   const [showRestPrompt, setShowRestPrompt] = useState(false)
+  const [restPromptSeconds, setRestPromptSeconds] = useState(
+    REST_PROMPT_AUTO_CONTINUE_SECONDS,
+  )
   const [showStopPrompt, setShowStopPrompt] = useState(
     Boolean(resumeAfterRefresh),
   )
@@ -281,7 +286,7 @@ function FocusTimer({
 
     return () => window.clearInterval(timer)
     // `seconds` is intentionally captured only when a running period begins.
-    // Pausing or opening a dialog starts a new anchor from the latest value.
+    // Pausing, resting, or opening a blocking dialog starts a fresh anchor.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     initialSeconds,
@@ -293,6 +298,25 @@ function FocusTimer({
     showRestPrompt,
     showStopPrompt,
   ])
+
+  useEffect(() => {
+    if (!showRestPrompt || mode !== 'up') return undefined
+
+    const continueAt = Date.now() + REST_PROMPT_AUTO_CONTINUE_SECONDS * 1000
+
+    function updateAutoContinueCountdown() {
+      const remaining = Math.max(
+        0,
+        Math.ceil((continueAt - Date.now()) / 1000),
+      )
+      setRestPromptSeconds(remaining)
+
+      if (remaining === 0) setShowRestPrompt(false)
+    }
+
+    const timer = window.setInterval(updateAutoContinueCountdown, 250)
+    return () => window.clearInterval(timer)
+  }, [mode, showRestPrompt])
 
   useEffect(() => {
     if (!isResting) return undefined
@@ -464,13 +488,43 @@ function FocusTimer({
 
       {showRestPrompt && (
         <div className="focus-dialog-backdrop">
-          <section className="focus-dialog" role="dialog" aria-modal="true">
+          <section
+            className="focus-dialog focus-dialog--rest"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="focus-rest-title"
+          >
             <span className="focus-dialog__icon">☕</span>
             <p className="focus-dialog__eyebrow">温柔提醒</p>
-            <h2>专注很久了，休息一下吗？</h2>
+            <h2 id="focus-rest-title">专注很久了，休息一下吗？</h2>
             <p>
               短暂离开屏幕、喝口水，通常比勉强坚持更有效。
             </p>
+            {mode === 'up' && (
+              <div
+                className="focus-dialog__auto-continue"
+                role="status"
+                aria-live="polite"
+              >
+                <span aria-hidden="true">
+                  <i
+                    style={{
+                      '--auto-continue-progress': `${
+                        (restPromptSeconds /
+                          REST_PROMPT_AUTO_CONTINUE_SECONDS) *
+                        100
+                      }%`,
+                    }}
+                  />
+                </span>
+                <p>
+                  <span>
+                    <strong>{restPromptSeconds} 秒</strong> 后自动继续计时
+                  </span>
+                  <small>无需操作，倒计时结束后将恢复原来的节奏</small>
+                </p>
+              </div>
+            )}
             <div className="focus-dialog__actions">
               <button
                 className="focus-dialog__primary"
@@ -789,7 +843,7 @@ function FocusPage() {
       breakMinutes,
       task: selectedTask || null,
     }
-    localStorage.setItem(
+    setAccountStorageItem(
       PREFERENCES_STORAGE_KEY,
       JSON.stringify({
         mode,

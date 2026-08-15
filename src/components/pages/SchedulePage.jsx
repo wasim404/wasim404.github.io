@@ -12,6 +12,10 @@ import {
   weekdayNumber,
 } from '../../utils/taskRecurrence'
 import './SchedulePage.css'
+import {
+  ACCOUNT_DATA_APPLIED_EVENT,
+  setAccountStorageItem,
+} from '../../services/accountData'
 
 const TASKS_STORAGE_KEY = 'manoong-schedule-tasks'
 const DAILY_STATS_KEY = 'manoong-daily-stats'
@@ -891,8 +895,17 @@ function SchedulePage() {
   const [taskToDelete, setTaskToDelete] = useState(null)
 
   useEffect(() => {
-    localStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(tasks))
+    setAccountStorageItem(TASKS_STORAGE_KEY, JSON.stringify(tasks))
   }, [tasks])
+
+  useEffect(() => {
+    function reloadAccountData() {
+      setTasks(readStoredTasks())
+      setDailyStats(readJson(DAILY_STATS_KEY, {}))
+    }
+    window.addEventListener(ACCOUNT_DATA_APPLIED_EVENT, reloadAccountData)
+    return () => window.removeEventListener(ACCOUNT_DATA_APPLIED_EVENT, reloadAccountData)
+  }, [])
 
   const selectedTasks = useMemo(
     () => tasks.filter((task) => taskOccursOnDate(task, selectedDate)),
@@ -1008,7 +1021,7 @@ function SchedulePage() {
               : 0),
       )
       stats[key] = day
-      localStorage.setItem(DAILY_STATS_KEY, JSON.stringify(stats))
+      setAccountStorageItem(DAILY_STATS_KEY, JSON.stringify(stats))
       return stats
     })
   }
@@ -1041,7 +1054,7 @@ function SchedulePage() {
           return [key, day]
         }),
       )
-      localStorage.setItem(DAILY_STATS_KEY, JSON.stringify(stats))
+      setAccountStorageItem(DAILY_STATS_KEY, JSON.stringify(stats))
       return stats
     })
     setTaskToDelete(null)

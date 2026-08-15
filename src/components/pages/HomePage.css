@@ -165,7 +165,9 @@ button, a { -webkit-tap-highlight-color: transparent; }
   transition: filter .6s ease, opacity .6s ease, transform .6s ease;
 }
 .daily-quote p { margin: 0; line-height: 1.65; font-size: 13px; color: #e6eee9; }
-.daily-quote small { display: block; margin-top: 9px; color: #8fa99f; font-size: 9px; letter-spacing: .06em; }
+.daily-quote small { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 9px; color: #8fa99f; font-size: 9px; letter-spacing: .06em; }
+.daily-quote small span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.daily-quote small b { flex: 0 0 auto; padding: 3px 7px; border: 1px solid rgba(119,185,159,.22); border-radius: 999px; color: #a9c5ba; font-size: 8px; font-weight: 600; letter-spacing: .08em; }
 .quote-mark { position: absolute; left: 17px; top: 10px; color: var(--coral); font-family: Georgia, serif; font-size: 42px; }
 .daily-checkin.is-locked .daily-quote,
 .daily-checkin.is-unlocking .daily-quote {

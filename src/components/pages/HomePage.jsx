@@ -1,65 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { getDailyQuote } from '../../data/dailyQuotes'
 import './HomePage.css'
+import { setAccountStorageItem } from '../../services/accountData'
+import { useAuth } from '../../context/AuthContext'
 
 const pad = (value) => String(value).padStart(2, '0')
-
-const DAILY_OPENINGS = [
-  '今天不必证明什么，',
-  '把注意力带回眼前，',
-  '允许自己的节奏慢下来，',
-  '在喧闹之外，',
-  '从一个清晰的选择开始，',
-  '当你愿意停下来整理思绪，',
-  '比起等待完美状态，',
-  '给今天留一点呼吸感，',
-  '把期待变成具体的行动，',
-  '在有限的时间里，',
-  '别急着看很远的地方，',
-  '带着一点好奇心，',
-  '把复杂留给时间，',
-  '即使能量不算充足，',
-  '让目标安静地落在纸上，',
-  '从容不是停滞，',
-  '当你专注于自己的坐标，',
-  '今天仍是一张新纸，',
-]
-
-const DAILY_CORES = [
-  '先完成最小但重要的一步',
-  '认真对待正在做的这一件事',
-  '给最重要的任务留出安静的时间',
-  '把一个模糊问题写成清晰的问题',
-  '选择一件值得深挖的事情',
-  '用完成代替反复设想',
-  '为注意力划出一小块干净的空间',
-  '让每一次暂停都服务于重新出发',
-  '把困难拆成能够开始的尺寸',
-  '记住今天真正学会的东西',
-  '在行动里寻找下一步答案',
-  '先照顾好节奏，再追求速度',
-  '为自己保留不被打扰的片刻',
-  '用耐心把生疏变成熟悉',
-  '让好奇心带你多走一步',
-  '完成一次诚实而具体的练习',
-  '把此刻的专注当作给未来的礼物',
-]
-
-const DAILY_ENDINGS = [
-  '，你会比想象中走得更远。',
-  '，积累会在看不见的地方发生。',
-  '，这就是今天最好的进度。',
-  '，答案会在途中慢慢显现。',
-  '，时间自然会站在你这边。',
-  '，小小的确定感会重新回来。',
-  '，今天便没有被轻易辜负。',
-  '，成长就藏在这样的时刻里。',
-  '，你正在建立属于自己的秩序。',
-  '，剩下的交给持续与耐心。',
-  '，这份认真终会留下痕迹。',
-  '，明天的你会感谢这一刻。',
-  '，稳稳向前已经足够动人。',
-]
 
 const HERO_LEADS = [
   '先把脚步放稳，',
@@ -155,23 +101,7 @@ function getDayNumber(date) {
   )
 }
 
-function getDailyQuote(date) {
-  const dayNumber = getDayNumber(date)
-  const total = DAILY_OPENINGS.length * DAILY_CORES.length * DAILY_ENDINGS.length
-  const index = ((dayNumber % total) + total) % total
-  const opening = DAILY_OPENINGS[index % DAILY_OPENINGS.length]
-  const core = DAILY_CORES[
-    Math.floor(index / DAILY_OPENINGS.length) % DAILY_CORES.length
-  ]
-  const ending = DAILY_ENDINGS[
-    Math.floor(index / (DAILY_OPENINGS.length * DAILY_CORES.length)) %
-      DAILY_ENDINGS.length
-  ]
-
-  return `${opening}${core}${ending}`
-}
-
-function getDailyHero(date, dailyQuote) {
+function getDailyHero(date, dailyQuoteText) {
   const dayNumber = getDayNumber(date)
   const lead = HERO_LEADS[(dayNumber * 5 + 7) % HERO_LEADS.length]
   const highlight =
@@ -182,7 +112,7 @@ function getDailyHero(date, dailyQuote) {
     (dayNumber * 13 + 9) % HERO_SUPPORT_DETAILS.length
   let supportDetail = HERO_SUPPORT_DETAILS[supportDetailIndex]
 
-  if (`${supportLead}${supportDetail}` === dailyQuote) {
+  if (`${supportLead}${supportDetail}` === dailyQuoteText) {
     supportDetailIndex = (supportDetailIndex + 1) % HERO_SUPPORT_DETAILS.length
     supportDetail = HERO_SUPPORT_DETAILS[supportDetailIndex]
   }
@@ -253,6 +183,7 @@ function ProgressRing({ value, label, detail, tone = 'mint' }) {
 }
 
 function HomePage() {
+  const { user } = useAuth()
   const [now, setNow] = useState(() => new Date())
   const dateKey = getDateKey(now)
   const [energy, setEnergy] = useState(
@@ -289,8 +220,11 @@ function HomePage() {
   }, [checkinStatus, dateKey])
 
   const progress = useMemo(() => getTimeProgress(now), [now])
-  const dailyQuote = useMemo(() => getDailyQuote(now), [now])
-  const heroCopy = useMemo(() => getDailyHero(now, dailyQuote), [now, dailyQuote])
+  const dailyQuote = useMemo(() => getDailyQuote(getDayNumber(now)), [now])
+  const heroCopy = useMemo(
+    () => getDailyHero(now, dailyQuote.text),
+    [now, dailyQuote.text],
+  )
   const weekday = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'][now.getDay()]
   const greeting = now.getHours() < 11 ? '早上好' : now.getHours() < 18 ? '下午好' : '晚上好'
   const monthCells = Array.from({ length: progress.daysInMonth }, (_, index) => index + 1)
@@ -302,7 +236,7 @@ function HomePage() {
 
   const handleDailyCheckin = () => {
     if (checkinStatus !== 'locked') return
-    localStorage.setItem(`manoong-daily-checkin-${dateKey}`, 'true')
+    setAccountStorageItem(`manoong-daily-checkin-${dateKey}`, 'true')
     setCheckinState({ dateKey, status: 'unlocking' })
   }
 
@@ -362,8 +296,11 @@ function HomePage() {
               aria-hidden={checkinStatus !== 'unlocked'}
             >
               <span className="quote-mark">“</span>
-              <p>{dailyQuote}</p>
-              <small>— MANOONG 今日签</small>
+              <p>{dailyQuote.text}</p>
+              <small>
+                <span>— {dailyQuote.source}</span>
+                <b>{dailyQuote.theme}</b>
+              </small>
             </div>
             {checkinStatus !== 'unlocked' && (
               <div className="checkin-lock">
@@ -447,7 +384,9 @@ function HomePage() {
             <span className="section-kicker">YOUR LITTLE STUDIO</span>
             <h2 id="studio-title">今天，想把注意力放在哪里？</h2>
           </div>
-          <span className="live-note"><i /> 只保存在这台设备</span>
+          <span className="live-note">
+            <i /> {user ? '已安全同步到账户' : '登录后可跨设备同步'}
+          </span>
         </div>
 
         <div className="studio-grid">
@@ -460,7 +399,7 @@ function HomePage() {
                   className={energy === index + 1 ? 'is-active' : ''}
                   onClick={() => {
                     setEnergy(index + 1)
-                    localStorage.setItem('manoong-energy', String(index + 1))
+                    setAccountStorageItem('manoong-energy', String(index + 1))
                   }}
                   type="button"
                 >

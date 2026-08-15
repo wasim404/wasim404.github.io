@@ -4,6 +4,7 @@ import {
   taskOccursOnDate,
 } from '../../utils/taskRecurrence'
 import './AboutPage.css'
+import { setAccountStorageItem } from '../../services/accountData'
 
 const DAILY_STATS_KEY = 'manoong-daily-stats'
 const TASKS_STORAGE_KEY = 'manoong-schedule-tasks'
@@ -488,7 +489,7 @@ function AboutPage() {
 
   useEffect(() => {
     try {
-      localStorage.setItem(
+      setAccountStorageItem(
         FOCUS_GOAL_STORAGE_KEY,
         String(focusGoalMinutes),
       )
@@ -524,7 +525,7 @@ function AboutPage() {
         tier: tierForScore(score),
         updatedAt: new Date().toISOString(),
       }
-      localStorage.setItem(REFLECTIONS_STORAGE_KEY, JSON.stringify(current))
+      setAccountStorageItem(REFLECTIONS_STORAGE_KEY, JSON.stringify(current))
       setReflections({ ...current })
       setNote(cleanNote)
       setSaveState('saved')
