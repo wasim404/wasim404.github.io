@@ -1146,53 +1146,8 @@ function SchedulePage() {
   return (
     <main className="schedule-page">
       <div className="schedule-shell">
-        <header className="schedule-heading">
-          <div>
-            <p><span /> SCHEDULE</p>
-            <h1>让每一天，<em>清晰发生</em></h1>
-            <small>先放下要做的事，再决定它何时发生。</small>
-          </div>
-          <div className="schedule-heading__actions">
-            <button type="button" onClick={() => setSelectedDate(new Date())}>
-              回到今天
-            </button>
-            <button type="button" onClick={() => setIsModalOpen(true)}>
-              <span>＋</span> 新建任务
-            </button>
-          </div>
-        </header>
-
-        <section className="schedule-overview">
-          <div>
-            <span>完成进度</span>
-            <strong>{completedCount}<small> / {selectedTasks.length}</small></strong>
-            <div className="schedule-progress">
-              <i style={{ width: `${completionPercent}%` }} />
-            </div>
-          </div>
-          <div>
-            <span>当日专注</span>
-            <strong>{formatMinutes(selectedStats.focusSeconds || 0)}</strong>
-            <small>专注完成后自动累计</small>
-          </div>
-          <p>
-            {selectedTasks.length === 0
-              ? '留白不是浪费，也是一种安排。'
-              : completionPercent === 100
-                ? '今天的任务全部完成，辛苦了。'
-                : `还有 ${selectedTasks.length - completedCount} 件事，慢慢来。`}
-          </p>
-        </section>
-
         <div className="schedule-workspace">
           <section className="calendar-panel">
-            <div className="calendar-panel__head">
-              <div>
-                <p>日期导航</p>
-                <h2>选择一天</h2>
-              </div>
-              <span>圆点表示有任务</span>
-            </div>
             <Calendar
               key={`${selectedDate.getFullYear()}-${selectedDate.getMonth()}`}
               selectedDate={selectedDate}
@@ -1254,6 +1209,27 @@ function SchedulePage() {
             )}
           </section>
         </div>
+
+        <section className="schedule-overview">
+          <div>
+            <span>完成进度</span>
+            <strong>{completedCount}<small> / {selectedTasks.length}</small></strong>
+            <div className="schedule-progress">
+              <i style={{ width: `${completionPercent}%` }} />
+            </div>
+          </div>
+          <div>
+            <span>当日专注</span>
+            <strong>{formatMinutes(selectedStats.focusSeconds || 0)}</strong>
+          </div>
+          {selectedTasks.length > 0 && (
+            <p>
+              {completionPercent === 100
+                ? '今天的任务全部完成，辛苦了。'
+                : `还有 ${selectedTasks.length - completedCount} 件事，慢慢来。`}
+            </p>
+          )}
+        </section>
       </div>
 
       <button

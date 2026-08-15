@@ -32,26 +32,26 @@ function Navbar() {
   const { user, isLoading } = useAuth()
   return (
     <header className="fixed left-0 top-0 z-50 w-full border-b border-[#18392f]/10 bg-[#f7f4ed]/90 backdrop-blur-xl">
-      <nav className="mx-auto flex h-[72px] max-w-[1180px] items-center justify-between px-3 sm:h-22 sm:px-6">
+      <nav className="mx-auto flex h-[72px] max-w-[1180px] items-center px-3 sm:h-22 sm:px-6" aria-label="主导航">
         <NavLink
           to="/"
-          className="flex items-center gap-3 text-[15px] font-extrabold tracking-[0.15em] text-[#18392f]"
+          className="shrink-0 text-[12px] font-extrabold tracking-[0.16em] text-[#18392f] sm:text-[15px]"
+          aria-label="MANOONG 首页"
         >
-          <span className="grid size-8 place-items-center rounded-[10px] bg-[#18392f] text-[12px] text-[#77b99f]">M</span>
-          <span className="hidden sm:inline">MANOONG</span>
+          MANOONG
         </NavLink>
 
-        <div className="flex items-center gap-0.5 rounded-2xl bg-white/55 p-1 sm:gap-1 sm:p-1.5">
+        <div className="mx-2 flex min-w-0 flex-1 items-center justify-evenly sm:mx-8 lg:mx-16">
           {navItems.map((item) => (
             <NavLink
               key={item.id}
               to={item.path}
               title={item.description}
               className={({ isActive }) =>
-                `${item.id === 'home' ? 'hidden sm:inline-flex' : 'inline-flex'} rounded-xl px-2 py-2 text-[11px] font-medium transition sm:px-4 sm:text-[12px] ${
+                `inline-flex px-1 py-2 text-[13px] tracking-[0.03em] transition-colors sm:px-3 sm:text-[16px] ${
                   isActive
-                    ? 'bg-[#18392f] text-white shadow-sm'
-                    : 'text-[#527066] hover:bg-white hover:text-[#18392f]'
+                    ? 'font-extrabold text-[#18392f]'
+                    : 'font-semibold text-[#527066] hover:text-[#18392f]'
                 }`
               }
             >
@@ -62,9 +62,9 @@ function Navbar() {
 
         <NavLink
           to={user ? '/profile' : '/login'}
-          className="hidden rounded-xl border border-[#18392f]/15 px-4 py-2 text-[11px] font-semibold text-[#18392f] transition hover:border-[#77b99f] hover:bg-[#dcece4] sm:block"
+          className="inline-flex shrink-0 items-center rounded-[10px] bg-[#18392f] px-3 py-2.5 text-[10px] font-bold text-white shadow-[0_8px_20px_rgba(24,57,47,0.18)] transition hover:-translate-y-0.5 hover:bg-[#245244] hover:shadow-[0_10px_24px_rgba(24,57,47,0.24)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#18392f] sm:px-5 sm:text-[12px]"
         >
-          {isLoading ? '账户' : user ? '我的账户' : '登录'} <span className="ml-1 text-[#e8785f]">→</span>
+          {isLoading ? '账户' : user ? '我的账户' : '登录'} <span className="ml-1.5 text-[#77b99f]" aria-hidden="true">→</span>
         </NavLink>
       </nav>
     </header>

@@ -33,7 +33,6 @@ export function collectLocalAccountData() {
     preferences: {
       focus: readJson('manoong-focus-preferences', {}),
       focusGoalMinutes: Number(localStorage.getItem('manoong-focus-goal-minutes')) || undefined,
-      energy: Number(localStorage.getItem('manoong-energy')) || undefined,
     },
     checkins,
   }
@@ -46,8 +45,7 @@ export function hasMeaningfulLocalData(data) {
     Object.keys(data.reflections).length > 0 ||
     Object.keys(data.checkins).length > 0 ||
     Object.keys(data.preferences.focus || {}).length > 0 ||
-    Boolean(data.preferences.focusGoalMinutes) ||
-    Boolean(data.preferences.energy)
+    Boolean(data.preferences.focusGoalMinutes)
   )
 }
 
@@ -78,9 +76,6 @@ export function applyAccountData(data, userId) {
   localStorage.removeItem('manoong-energy')
   if (data.preferences?.focusGoalMinutes) {
     localStorage.setItem('manoong-focus-goal-minutes', String(data.preferences.focusGoalMinutes))
-  }
-  if (data.preferences?.energy) {
-    localStorage.setItem('manoong-energy', String(data.preferences.energy))
   }
   const oldCheckinKeys = []
   for (let index = 0; index < localStorage.length; index += 1) {
@@ -118,12 +113,6 @@ function accountValueForStorageKey(storageKey, value) {
     return {
       dataKey: 'preferences',
       value: { ...collectLocalAccountData().preferences, focusGoalMinutes: Number(value) },
-    }
-  }
-  if (storageKey === 'manoong-energy') {
-    return {
-      dataKey: 'preferences',
-      value: { ...collectLocalAccountData().preferences, energy: Number(value) },
     }
   }
   if (storageKey.startsWith('manoong-daily-checkin-')) {

@@ -924,16 +924,6 @@ function FocusPage() {
 
       <div className="focus-shell">
         <header className="focus-heading">
-          <div>
-            <p className="focus-kicker">
-              <span />
-              FOCUS STUDIO
-            </p>
-            <h1>把世界调成<span>静音</span></h1>
-            <p className="focus-heading__copy">
-              选择一种节奏，然后把注意力留给眼前唯一重要的事。
-            </p>
-          </div>
           <div className="focus-heading__status">
             <i />
             空间已准备好
@@ -1010,12 +1000,6 @@ function FocusPage() {
                 </button>
               ))}
             </div>
-
-            {tasks.length === 0 && (
-              <p className="focus-panel__empty">
-                日程中还没有可选任务，先用自由专注也完全可以。
-              </p>
-            )}
           </section>
 
           <section className="focus-panel focus-panel--timer">

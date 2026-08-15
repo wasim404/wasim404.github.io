@@ -29,9 +29,15 @@ function Calendar({ selectedDate, onSelectDate, hasTasksForDate }) {
     setCurrentMonth(new Date(year, month + 1, 1))
   }
 
+  function showToday() {
+    const today = new Date()
+    setCurrentMonth(new Date(today.getFullYear(), today.getMonth(), 1))
+    onSelectDate(today)
+  }
+
   return (
     <div className="px-1 py-2 sm:px-3">
-      <div className="mb-7 flex items-center justify-between">
+      <div className="mb-7 grid grid-cols-[2.5rem_1fr_2.5rem] items-center">
         <button
           type="button"
           onClick={showPreviousMonth}
@@ -41,9 +47,18 @@ function Calendar({ selectedDate, onSelectDate, hasTasksForDate }) {
           ‹
         </button>
 
-        <h3 className="text-lg font-semibold tracking-tight text-slate-900">
-          {year} 年 {month + 1} 月
-        </h3>
+        <div className="flex items-center justify-center gap-3">
+          <h3 className="text-lg font-semibold tracking-tight text-slate-900">
+            {year} 年 {month + 1} 月
+          </h3>
+          <button
+            type="button"
+            onClick={showToday}
+            className="rounded-full bg-[#edf3ef] px-3 py-1.5 text-[11px] font-semibold text-[#478b76] transition hover:bg-[#dcebe4]"
+          >
+            今天
+          </button>
+        </div>
 
         <button
           type="button"
@@ -82,10 +97,10 @@ function Calendar({ selectedDate, onSelectDate, hasTasksForDate }) {
               type="button"
               onClick={() => onSelectDate(date)}
               aria-label={`${year}年${month + 1}月${day}日${hasTasks ? '，有任务' : ''}`}
-              className={`relative aspect-square rounded-xl text-sm font-medium transition-all duration-200 ${
+              className={`calendar-day relative aspect-square rounded-xl text-sm font-medium ${
                 isSelected
-                  ? 'bg-slate-900 text-white shadow-md shadow-slate-900/20'
-                  : 'text-slate-800 hover:bg-slate-100'
+                  ? 'is-selected bg-slate-900 text-white shadow-md shadow-slate-900/20'
+                  : 'text-slate-800'
               } ${
                 isToday && !isSelected
                   ? 'ring-1 ring-inset ring-blue-500'

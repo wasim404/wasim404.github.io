@@ -3,93 +3,10 @@ import { Link } from 'react-router-dom'
 import { getDailyQuote } from '../../data/dailyQuotes'
 import './HomePage.css'
 import { setAccountStorageItem } from '../../services/accountData'
-import { useAuth } from '../../context/AuthContext'
 
 const pad = (value) => String(value).padStart(2, '0')
 
-const HERO_LEADS = [
-  '先把脚步放稳，',
-  '不用急着证明什么，',
-  '把纷扰轻轻放下，',
-  '从眼前的一小步开始，',
-  '让今天留一点空白，',
-  '把注意力收回此刻，',
-  '允许自己慢慢进入状态，',
-  '比速度更重要的是方向，',
-  '给好奇心多一点位置，',
-  '把目标缩小到可以开始，',
-  '带着耐心继续练习，',
-  '让每一次停顿都有意义，',
-  '选择自己的节奏，',
-]
-
-const HERO_HIGHLIGHTS = [
-  '重要的事会慢慢清晰。',
-  '专注会替你找到答案。',
-  '今天值得认真对待。',
-  '进步正在安静发生。',
-  '你已经在靠近想去的地方。',
-  '此刻就是最好的起点。',
-  '小小一步也有分量。',
-  '完成会带来新的力量。',
-  '时间会记住这份认真。',
-  '清醒比忙碌更珍贵。',
-  '方向会在行动中出现。',
-  '今天可以温柔而坚定。',
-  '积累终会给出回声。',
-  '平静也是一种效率。',
-  '自己的节奏最可靠。',
-  '做深一件事就很好。',
-  '认真生活本身就是答案。',
-]
-
-const HERO_SUPPORT_LEADS = [
-  '不必赶着填满每一分钟。',
-  '先看清真正重要的事情。',
-  '今天不需要完成所有答案。',
-  '给思绪一点安静的空间。',
-  '把遥远的目标放回眼前。',
-  '允许学习保留自己的呼吸。',
-  '从一个愿意开始的动作出发。',
-  '别让忙碌替你决定方向。',
-  '把复杂的事情慢慢拆开。',
-  '今天只与昨天的自己比较。',
-  '先照顾好能量，再谈效率。',
-  '把注意力放在可以改变的地方。',
-  '一次只认真面对一个问题。',
-  '让计划服务于生活，而不是相反。',
-  '无需等待所谓的完美状态。',
-  '把犹豫变成一次轻量的尝试。',
-  '为真正的思考留下一点余地。',
-  '慢下来并不意味着停止。',
-  '每一个普通日子都可以被认真使用。',
-]
-
-const HERO_SUPPORT_DETAILS = [
-  '给重要的事情留出完整的一段。',
-  '从可以完成的小事里建立确定感。',
-  '把今天过好，本身就是一种积累。',
-  '让一次专注成为今天的清晰坐标。',
-  '你需要的下一步，通常就在手边。',
-  '做少一点，也可以做得更深入。',
-  '先行动，方向会在途中逐渐清楚。',
-  '真正的效率来自清醒的取舍。',
-  '把理解变深，比把页面翻快更重要。',
-  '留下一点余力，才能走得更长久。',
-  '对自己诚实，是稳定前进的开始。',
-  '学习不是追赶，而是在建立自己的地图。',
-  '今天的认真，会成为明天的底气。',
-  '把一次练习做完整，就已经很了不起。',
-  '当注意力回来，时间也会重新变得宽阔。',
-  '每次重新开始，都算一次有效的前进。',
-  '让任务变小，让行动真正发生。',
-  '用耐心回应暂时还不会的事情。',
-  '完成眼前这一页，再决定下一段路。',
-  '给好奇心一个继续追问的机会。',
-  '不被打扰的片刻，往往最有力量。',
-  '稳定地出现，比偶尔完美更可靠。',
-  '今天的节奏，由你亲自决定。',
-]
+const clockTicks = Array.from({ length: 60 }, (_, index) => index)
 
 function getDateKey(date) {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
@@ -99,25 +16,6 @@ function getDayNumber(date) {
   return Math.floor(
     Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / 86400000,
   )
-}
-
-function getDailyHero(date, dailyQuoteText) {
-  const dayNumber = getDayNumber(date)
-  const lead = HERO_LEADS[(dayNumber * 5 + 7) % HERO_LEADS.length]
-  const highlight =
-    HERO_HIGHLIGHTS[(dayNumber * 7 + 3) % HERO_HIGHLIGHTS.length]
-  const supportLead =
-    HERO_SUPPORT_LEADS[(dayNumber * 11 + 5) % HERO_SUPPORT_LEADS.length]
-  let supportDetailIndex =
-    (dayNumber * 13 + 9) % HERO_SUPPORT_DETAILS.length
-  let supportDetail = HERO_SUPPORT_DETAILS[supportDetailIndex]
-
-  if (`${supportLead}${supportDetail}` === dailyQuoteText) {
-    supportDetailIndex = (supportDetailIndex + 1) % HERO_SUPPORT_DETAILS.length
-    supportDetail = HERO_SUPPORT_DETAILS[supportDetailIndex]
-  }
-
-  return { lead, highlight, supportLead, supportDetail }
 }
 
 const unlockParticles = Array.from({ length: 24 }, (_, index) => {
@@ -163,6 +61,7 @@ function Icon({ children }) {
 function ProgressRing({ value, label, detail, tone = 'mint' }) {
   return (
     <article className={`progress-card progress-card--${tone}`}>
+      <span className="progress-card__title">本年进度</span>
       <div
         className="progress-ring"
         style={{ '--progress': `${value * 3.6}deg` }}
@@ -176,19 +75,14 @@ function ProgressRing({ value, label, detail, tone = 'mint' }) {
       </div>
       <div className="progress-card__copy">
         <span>{detail}</span>
-        <b>{label === '今年' ? '长期主义，也可以看得见' : '每一小步都算数'}</b>
       </div>
     </article>
   )
 }
 
 function HomePage() {
-  const { user } = useAuth()
   const [now, setNow] = useState(() => new Date())
   const dateKey = getDateKey(now)
-  const [energy, setEnergy] = useState(
-    () => Number(localStorage.getItem('manoong-energy') || 2),
-  )
   const [focusMinutes, setFocusMinutes] = useState(25)
   const [checkinState, setCheckinState] = useState(() => ({
     dateKey,
@@ -205,7 +99,7 @@ function HomePage() {
         : 'locked'
 
   useEffect(() => {
-    const timer = window.setInterval(() => setNow(new Date()), 60000)
+    const timer = window.setInterval(() => setNow(new Date()), 1000)
     return () => window.clearInterval(timer)
   }, [])
 
@@ -221,13 +115,10 @@ function HomePage() {
 
   const progress = useMemo(() => getTimeProgress(now), [now])
   const dailyQuote = useMemo(() => getDailyQuote(getDayNumber(now)), [now])
-  const heroCopy = useMemo(
-    () => getDailyHero(now, dailyQuote.text),
-    [now, dailyQuote.text],
-  )
   const weekday = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'][now.getDay()]
-  const greeting = now.getHours() < 11 ? '早上好' : now.getHours() < 18 ? '下午好' : '晚上好'
   const monthCells = Array.from({ length: progress.daysInMonth }, (_, index) => index + 1)
+  const minuteRotation = now.getMinutes() * 6
+  const hourRotation = (now.getHours() % 12) * 30 + now.getMinutes() * 0.5
 
   const rollFocus = () => {
     const options = [15, 25, 35, 45, 60]
@@ -243,27 +134,49 @@ function HomePage() {
   return (
     <main className="home-shell">
       <section className="hero-section">
-        <div className="hero-copy">
-          <div className="eyebrow"><span /> YOUR LEARNING COMPANION</div>
-          <h1>{greeting}，<br />{heroCopy.lead}<span>{heroCopy.highlight}</span></h1>
-          <p>
-            {heroCopy.supportLead}
-            <br className="desktop-break" />{heroCopy.supportDetail}
-          </p>
-          <div className="hero-actions">
-            <Link className="primary-button" to="/focus">
-              <Icon>▶</Icon> 开始专注
-            </Link>
-            <Link className="text-button" to="/schedule">
-              查看今日计划 <span aria-hidden="true">↗</span>
-            </Link>
+        <div className="time-stage">
+          <div
+            className="analog-clock"
+            role="img"
+            aria-label={`当前时间 ${pad(now.getHours())}:${pad(now.getMinutes())}`}
+          >
+            <div className="analog-clock__face" aria-hidden="true">
+              {clockTicks.map((tick) => (
+                <i
+                  key={tick}
+                  className={`clock-tick${tick % 5 === 0 ? ' clock-tick--hour' : ''}${tick % 15 === 0 ? ' clock-tick--cardinal' : ''}`}
+                  style={{ '--tick-rotation': `${tick * 6}deg` }}
+                />
+              ))}
+              <span className="clock-number clock-number--12">12</span>
+              <span className="clock-number clock-number--3">3</span>
+              <span className="clock-number clock-number--6">6</span>
+              <span className="clock-number clock-number--9">9</span>
+              <span
+                className="clock-hand clock-hand--hour"
+                style={{ '--hand-rotation': `${hourRotation}deg` }}
+              />
+              <span
+                className="clock-hand clock-hand--minute"
+                style={{ '--hand-rotation': `${minuteRotation}deg` }}
+              />
+              <span className="clock-pin" />
+            </div>
           </div>
+        </div>
+
+        <div className="hero-actions">
+          <Link className="primary-button" to="/focus">
+            <Icon>▶</Icon> 开始专注
+          </Link>
+          <Link className="text-button" to="/schedule">
+            查看今日计划 <span aria-hidden="true">↗</span>
+          </Link>
         </div>
 
         <aside className="today-card" aria-label="今日概览">
           <div className="today-card__top">
             <span>TODAY</span>
-            <span className="today-card__pulse" />
           </div>
           <div className="today-card__date">
             <strong>{pad(now.getDate())}</strong>
@@ -317,19 +230,18 @@ function HomePage() {
             )}
           </div>
           <div className="today-card__footer">
-            <span><i className="weather-dot" /> 适合深度思考</span>
             <b>{pad(now.getHours())}:{pad(now.getMinutes())}</b>
           </div>
         </aside>
       </section>
 
       <section className="progress-section" aria-labelledby="progress-title">
-        <div className="section-heading">
-          <div>
-            <span className="section-kicker">TIME, VISUALIZED</span>
-            <h2 id="progress-title">时间正在发生</h2>
-          </div>
-          <p>不是为了制造焦虑，<br />只是提醒你：此刻很珍贵。</p>
+        <div className="time-heading">
+          <h2 id="progress-title">
+            <span>流</span>
+            <i aria-hidden="true">·</i>
+            <span>时</span>
+          </h2>
         </div>
 
         <div className="progress-grid">
@@ -378,59 +290,29 @@ function HomePage() {
         </div>
       </section>
 
-      <section className="studio-section" aria-labelledby="studio-title">
-        <div className="section-heading section-heading--compact">
-          <div>
-            <span className="section-kicker">YOUR LITTLE STUDIO</span>
-            <h2 id="studio-title">今天，想把注意力放在哪里？</h2>
-          </div>
-          <span className="live-note">
-            <i /> {user ? '已安全同步到账户' : '登录后可跨设备同步'}
-          </span>
-        </div>
-
+      <section className="studio-section" aria-label="快捷功能">
         <div className="studio-grid">
-          <article className="energy-card">
-            <div className="card-label"><Icon>⌁</Icon><span>此刻能量</span></div>
-            <div className="energy-picker" role="group" aria-label="选择此刻能量">
-              {['低电量', '刚刚好', '满格'].map((label, index) => (
-                <button
-                  key={label}
-                  className={energy === index + 1 ? 'is-active' : ''}
-                  onClick={() => {
-                    setEnergy(index + 1)
-                    setAccountStorageItem('manoong-energy', String(index + 1))
-                  }}
-                  type="button"
-                >
-                  <span>{['◔', '◑', '●'][index]}</span>{label}
-                </button>
-              ))}
-            </div>
-            <p>{energy === 1 ? '低能量日，也值得温柔地前进。' : energy === 3 ? '状态在线，适合啃下最难的骨头。' : '稳定，就是今天最好的节奏。'}</p>
-          </article>
-
           <article className="focus-dice-card">
-            <div className="card-label"><Icon>✦</Icon><span>专注骰子</span></div>
-            <button className="dice-display" type="button" onClick={rollFocus} aria-label="随机一个专注时长">
-              <strong>{focusMinutes}</strong><span>MIN</span>
-            </button>
-            <div className="focus-dice-card__content">
-              <p>选择困难？让运气替你决定一轮。</p>
-              <div className="dice-actions">
-                <button type="button" className="small-button" onClick={rollFocus}>
-                  再摇一次 ↻
-                </button>
-                <Link
-                  className="dice-start-button"
-                  to="/focus"
-                  state={{ focusLaunch: { durationMinutes: focusMinutes } }}
-                >
-                  开始专注 <span aria-hidden="true">→</span>
-                </Link>
-              </div>
+            <div className="focus-dice-card__head">
+              <span>专注骰子</span>
+              <button type="button" onClick={rollFocus} aria-label="重新随机专注时长">↻</button>
             </div>
+            <button className="dice-display" type="button" onClick={rollFocus} aria-label="随机一个专注时长">
+              <strong>{focusMinutes}</strong><span>分钟</span>
+            </button>
+            <Link
+              className="dice-start-button"
+              to="/focus"
+              state={{ focusLaunch: { durationMinutes: focusMinutes } }}
+            >
+              开始专注 <span aria-hidden="true">→</span>
+            </Link>
           </article>
+          {Array.from({ length: 3 }, (_, index) => (
+            <article className="studio-placeholder" aria-label={`预留功能位 ${index + 1}`} key={index}>
+              <span aria-hidden="true">＋</span>
+            </article>
+          ))}
         </div>
       </section>
 

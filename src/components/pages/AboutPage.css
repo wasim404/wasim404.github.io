@@ -50,60 +50,6 @@
   margin: 0 auto;
 }
 
-.about-heading {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 28px;
-  margin-bottom: 43px;
-}
-
-.about-heading > div > p {
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  margin: 0 0 16px;
-  color: var(--about-blue);
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.2em;
-}
-
-.about-heading > div > p span {
-  width: 30px;
-  height: 1px;
-  background: var(--about-blue);
-}
-
-.about-heading h1 {
-  margin: 0;
-  font-size: clamp(39px, 5vw, 64px);
-  font-weight: 650;
-  letter-spacing: -0.065em;
-  line-height: 1.08;
-}
-
-.about-heading h1 span {
-  color: var(--about-violet);
-}
-
-.about-heading > div > small {
-  display: block;
-  margin-top: 15px;
-  color: var(--about-muted);
-  font-size: 14px;
-}
-
-.about-heading__quote {
-  margin: 0 0 7px;
-  color: #7d86a0;
-  font-family: Georgia, 'Noto Sans SC', serif;
-  font-size: 14px;
-  font-style: italic;
-  line-height: 1.8;
-  text-align: right;
-}
-
 .today-insight,
 .daily-review,
 .month-review,
@@ -157,48 +103,56 @@
   backdrop-filter: blur(16px);
 }
 
-.metric-orbit {
+.task-progress-pie {
   display: grid;
   width: 108px;
   height: 108px;
   place-items: center;
   border-radius: 50%;
-  background:
-    radial-gradient(circle at center, #ffffff 59%, transparent 60%),
-    conic-gradient(var(--metric-color) var(--metric-progress), #e7ebf4 0);
-  box-shadow: inset 0 0 0 1px rgba(74, 96, 149, 0.04);
+  background: conic-gradient(
+    var(--about-violet) 0 var(--task-progress),
+    #eee9fa var(--task-progress) 100%
+  );
+  box-shadow: inset 0 0 0 1px rgba(74, 96, 149, 0.06);
 }
 
-.metric-orbit span {
+.task-progress-pie span {
   display: grid;
-  width: 55px;
-  height: 55px;
   place-items: center;
-  border-radius: 18px;
-  color: var(--metric-color);
-  background: var(--metric-soft);
+  color: #ffffff;
   font-size: 23px;
+  text-shadow: 0 1px 4px rgba(39, 51, 78, 0.5);
 }
 
-.metric-orbit .metric-orbit__percent {
+.focus-progress-pie {
+  display: grid;
+  width: 108px;
+  height: 108px;
+  place-items: center;
+  border-radius: 50%;
+  background: conic-gradient(
+    var(--about-blue) 0 var(--focus-progress),
+    var(--about-blue-soft) var(--focus-progress) 100%
+  );
+  box-shadow: inset 0 0 0 1px rgba(74, 96, 149, 0.06);
+}
+
+.focus-progress-pie__label {
   display: flex;
-  width: 66px;
-  height: 66px;
   align-items: baseline;
   justify-content: center;
-  border-radius: 50%;
-  color: var(--metric-color);
-  background: var(--metric-soft);
+  color: #ffffff;
   font-variant-numeric: tabular-nums;
+  text-shadow: 0 1px 4px rgba(39, 51, 78, 0.55);
 }
 
-.metric-orbit__percent strong {
+.focus-progress-pie__label strong {
   font-size: 23px;
   font-weight: 750;
   letter-spacing: -0.05em;
 }
 
-.metric-orbit__percent small {
+.focus-progress-pie__label small {
   margin-left: 2px;
   font-size: 10px;
   font-weight: 750;
@@ -242,13 +196,6 @@
 .metric-card__content > span {
   color: var(--about-muted);
   font-size: 12px;
-}
-
-.metric-card__content > small {
-  display: block;
-  margin-top: 7px;
-  color: #a0a7b8;
-  font-size: 9px;
 }
 
 .focus-goal-control {
@@ -395,6 +342,10 @@
   margin-top: 16px;
 }
 
+.task-visual {
+  flex-wrap: wrap;
+}
+
 .focus-blocks i {
   width: 11px;
   height: 5px;
@@ -419,8 +370,8 @@
 }
 
 .task-visual i.is-filled {
-  border-color: var(--about-violet);
-  background: var(--about-violet);
+  border-color: #5f9f86;
+  background: #5f9f86;
 }
 
 .review-card {
@@ -462,6 +413,11 @@
   margin: 1px 0 5px;
   font-size: 18px;
   letter-spacing: -0.02em;
+}
+
+.review-step-title--score h3 {
+  margin-top: 2px;
+  font-size: 24px;
 }
 
 .review-step-title p {
@@ -1388,14 +1344,6 @@
     padding: 112px 14px 45px;
   }
 
-  .about-heading__quote {
-    display: none;
-  }
-
-  .about-heading h1 {
-    font-size: 41px;
-  }
-
   .insight-grid {
     grid-template-columns: 1fr;
   }
@@ -1406,7 +1354,12 @@
     padding: 22px;
   }
 
-  .metric-orbit {
+  .task-progress-pie {
+    width: 86px;
+    height: 86px;
+  }
+
+  .focus-progress-pie {
     width: 86px;
     height: 86px;
   }

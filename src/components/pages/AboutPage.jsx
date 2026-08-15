@@ -472,7 +472,6 @@ function AboutPage() {
     100,
     Math.round((focusSeconds / focusGoalSeconds) * 100),
   )
-  const remainingFocusSeconds = Math.max(0, focusGoalSeconds - focusSeconds)
   const focusGoalRangePercent =
     ((focusGoalMinutes - MIN_FOCUS_GOAL_MINUTES) /
       (MAX_FOCUS_GOAL_MINUTES - MIN_FOCUS_GOAL_MINUTES)) *
@@ -540,54 +539,24 @@ function AboutPage() {
       <div className="about-page__wash about-page__wash--two" />
 
       <div className="about-shell">
-        <header className="about-heading">
-          <div>
-            <p><span /> MY SPACE</p>
-            <h1>看见今天，也<span>听见自己</span></h1>
-            <small>
-              {today.getMonth() + 1} 月 {today.getDate()} 日 ·{' '}
-              {['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'][today.getDay()]}
-            </small>
-          </div>
-          <p className="about-heading__quote">
-            “记录不是为了评判，<br />只是为了更理解自己。”
-          </p>
-        </header>
-
         <section className="today-insight">
-          <header className="section-heading">
-            <div>
-              <p>TODAY IN NUMBERS</p>
-              <h2>今天，已经留下这些痕迹</h2>
-            </div>
-            <span>数据保存在当前设备</span>
-          </header>
-
           <div className="insight-grid">
             <article className="metric-card metric-card--focus">
               <div
-                className="metric-orbit"
-                style={{ '--metric-progress': `${focusGoalPercent}%` }}
+                className="focus-progress-pie"
+                style={{ '--focus-progress': `${focusGoalPercent}%` }}
                 role="img"
                 aria-label={`今日专注目标完成 ${focusGoalPercent}%`}
               >
-                <span className="metric-orbit__percent">
+                <span className="focus-progress-pie__label">
                   <strong>{focusGoalPercent}</strong>
                   <small>%</small>
                 </span>
               </div>
               <div className="metric-card__content">
-                <p>今日专注</p>
+                <p>今日已专注</p>
                 <strong>{focusTime.primary}<small>{focusTime.unit}</small></strong>
-                <span>
-                  {focusGoalPercent >= 100
-                    ? `今日目标已完成 · 目标 ${formatGoalDuration(focusGoalMinutes)}`
-                    : focusSeconds > 0
-                      ? `距离目标还差 ${formatGoalDuration(
-                          Math.ceil(remainingFocusSeconds / 60),
-                        )}`
-                      : `从第一段专注开始 · 目标 ${formatGoalDuration(focusGoalMinutes)}`}
-                </span>
+                <span>当前专注目标为{focusGoalMinutes}分钟</span>
 
                 <div className="focus-goal-control">
                   <div className="focus-goal-control__head">
@@ -632,10 +601,12 @@ function AboutPage() {
 
             <article className="metric-card metric-card--tasks">
               <div
-                className="metric-orbit"
-                style={{ '--metric-progress': `${completionPercent}%` }}
+                className="task-progress-pie"
+                style={{ '--task-progress': `${completionPercent}%` }}
+                role="img"
+                aria-label={`今日任务完成 ${completionPercent}%`}
               >
-                <span>✓</span>
+                <span aria-hidden="true">✓</span>
               </div>
               <div className="metric-card__content">
                 <p>完成任务</p>
@@ -645,39 +616,28 @@ function AboutPage() {
                     ? `今日计划完成 ${completionPercent}%`
                     : '今天还没有安排任务'}
                 </span>
-                <div className="task-visual" aria-hidden="true">
-                  {Array.from(
-                    { length: Math.max(5, Math.min(8, todayTasks.length || 5)) },
-                    (_, index) => (
+                {todayTasks.length > 0 && (
+                  <div className="task-visual" aria-hidden="true">
+                    {Array.from({ length: todayTasks.length }, (_, index) => (
                       <i className={index < completedFromTasks ? 'is-filled' : ''} key={index}>
                         {index < completedFromTasks ? '✓' : ''}
                       </i>
-                    ),
-                  )}
-                </div>
-                <small>每一次完成，都算数</small>
+                    ))}
+                  </div>
+                )}
               </div>
             </article>
           </div>
         </section>
 
         <section className="daily-review">
-          <header className="section-heading">
-            <div>
-              <p>DAILY REFLECTION</p>
-              <h2>用两分钟，和今天好好告别</h2>
-            </div>
-            <span>没有标准答案</span>
-          </header>
-
           <div className="review-card">
             {reviewStep === 'score' && (
               <div className="score-step">
-                <div className="review-step-title">
+                <div className="review-step-title review-step-title--score">
                   <span>01</span>
                   <div>
-                    <h3>如果凭第一感觉，今天是几分？</h3>
-                    <p>不要计算得失，选择最接近此刻感受的数字。</p>
+                    <h3>今天状态复盘</h3>
                   </div>
                 </div>
 
