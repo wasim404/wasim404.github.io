@@ -26,3 +26,21 @@ dist-ssr
 *.sln
 *.sw?
 ._*
+task.md
+
+# Windows shortcut
+*.lnk
+
+# macOS metadata
+._*
+
+# Build files
+*.zip
+
+# Node
+node_modules/
+
+# Environment
+.env
+.env.*
+!.env.example
