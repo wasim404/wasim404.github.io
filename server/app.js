@@ -9,6 +9,7 @@ import { authRouter } from './routes/auth.routes.js'
 import { userRouter } from './routes/user.routes.js'
 import { verifyRequestOrigin } from './middleware/origin.middleware.js'
 import { dataRouter } from './routes/data.routes.js'
+import { notesRouter } from './routes/notes.js'
 
 export function createApp() {
   const app = express()
@@ -26,6 +27,7 @@ export function createApp() {
   app.use('/api/auth', authRouter)
   app.use('/api/user', userRouter)
   app.use('/api/data', dataRouter)
+  app.use('/api/notes', notesRouter)
 
   app.use(notFoundHandler)
   app.use(errorHandler)

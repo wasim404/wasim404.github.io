@@ -1,4 +1,5 @@
-import { NavLink } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
+import { NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 const navItems = [
@@ -15,23 +16,73 @@ const navItems = [
     description: '安排和查看每日任务',
   },
   {
+    id: 'notes',
+    name: '随手记',
+    path: '/notes',
+    description: '记录临时想法',
+  },
+  {
     id: 'focus',
     name: '专注',
     path: '/focus',
     description: '进入沉浸式专注模式',
   },
+]
+
+const aboutItems = [
   {
-    id: 'about',
-    name: '关于',
+    id: 'settings',
+    name: '设置',
     path: '/about',
-    description: '了解 MANOONG 网站',
+    description: '账号与使用偏好',
+    end: true,
+  },
+  {
+    id: 'statistics',
+    name: '数据统计',
+    path: '/about/statistics',
+    description: '查看状态复盘与使用数据',
   },
 ]
 
+const getNavigationItemClass = (isActive) =>
+  `inline-flex px-1 py-2 text-[13px] leading-none tracking-[0.03em] transition-colors sm:px-3 sm:text-[20px] ${
+    isActive
+      ? 'font-extrabold text-[#18392f]'
+      : 'font-semibold text-[#527066] hover:text-[#18392f]'
+  }`
+
 function Navbar() {
   const { user, isLoading } = useAuth()
+  const location = useLocation()
+  const [isAboutOpen, setIsAboutOpen] = useState(false)
+  const aboutMenuRef = useRef(null)
+
+  useEffect(() => {
+    if (!isAboutOpen) return undefined
+
+    function closeOnOutsideClick(event) {
+      if (!aboutMenuRef.current?.contains(event.target)) {
+        setIsAboutOpen(false)
+      }
+    }
+
+    function closeOnEscape(event) {
+      if (event.key === 'Escape') setIsAboutOpen(false)
+    }
+
+    document.addEventListener('pointerdown', closeOnOutsideClick)
+    document.addEventListener('keydown', closeOnEscape)
+    return () => {
+      document.removeEventListener('pointerdown', closeOnOutsideClick)
+      document.removeEventListener('keydown', closeOnEscape)
+    }
+  }, [isAboutOpen])
+
+  const isAboutActive = location.pathname.startsWith('/about')
+
   return (
-    <header className="fixed left-0 top-0 z-50 w-full border-b border-[#18392f]/10 bg-[#f7f4ed]/90 backdrop-blur-xl">
+    <header className="site-navbar fixed left-0 top-0 z-50 w-full border-b border-[#18392f]/10 bg-[#f7f4ed]/90 backdrop-blur-xl">
       <nav className="mx-auto flex h-[72px] max-w-[1180px] items-center px-3 sm:h-22 sm:px-6" aria-label="主导航">
         <NavLink
           to="/"
@@ -47,17 +98,63 @@ function Navbar() {
               key={item.id}
               to={item.path}
               title={item.description}
-              className={({ isActive }) =>
-                `inline-flex px-1 py-2 text-[13px] tracking-[0.03em] transition-colors sm:px-3 sm:text-[16px] ${
-                  isActive
-                    ? 'font-extrabold text-[#18392f]'
-                    : 'font-semibold text-[#527066] hover:text-[#18392f]'
-                }`
-              }
+              className={({ isActive }) => getNavigationItemClass(isActive)}
             >
               {item.name}
             </NavLink>
           ))}
+
+          <div className="relative" ref={aboutMenuRef}>
+            <NavLink
+              to="/about"
+              className={`${getNavigationItemClass(isAboutActive)} items-center gap-1`}
+              aria-expanded={isAboutOpen}
+              aria-haspopup="menu"
+              aria-controls="about-navigation-menu"
+              onClick={(event) => {
+                event.preventDefault()
+                setIsAboutOpen((isOpen) => !isOpen)
+              }}
+            >
+              关于
+              <span
+                className={`text-[9px] transition-transform sm:text-[10px] ${isAboutOpen ? 'rotate-180' : ''}`}
+                aria-hidden="true"
+              >
+                ▾
+              </span>
+            </NavLink>
+
+            {isAboutOpen && (
+              <div
+                id="about-navigation-menu"
+                className="absolute left-1/2 top-[calc(100%+12px)] w-[196px] -translate-x-1/2 overflow-hidden rounded-[16px] border border-[#18392f]/10 bg-[#fffdf8]/98 p-1.5 shadow-[0_18px_48px_rgba(24,57,47,0.16)] backdrop-blur-xl"
+                role="menu"
+              >
+                {aboutItems.map((item) => (
+                  <NavLink
+                    key={item.id}
+                    to={item.path}
+                    end={item.end}
+                    role="menuitem"
+                    onClick={() => setIsAboutOpen(false)}
+                    className={({ isActive }) =>
+                      `block rounded-[11px] px-3 py-2.5 transition-colors ${
+                        isActive
+                          ? 'bg-[#dcece4] text-[#18392f]'
+                          : 'text-[#527066] hover:bg-[#f7f4ed] hover:text-[#18392f]'
+                      }`
+                    }
+                  >
+                    <strong className="block text-[13px]">{item.name}</strong>
+                    <span className="mt-0.5 block text-[10px] font-medium opacity-75">
+                      {item.description}
+                    </span>
+                  </NavLink>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         <NavLink

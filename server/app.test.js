@@ -27,3 +27,19 @@ test('state-changing API requests reject an untrusted origin', async () => {
 
   assert.equal(response.status, 403)
 })
+
+test('notes API requires an authenticated session', async () => {
+  const app = createApp()
+  const listResponse = await request(app).get('/api/notes')
+  const createResponse = await request(app)
+    .post('/api/notes')
+    .set('Origin', 'http://localhost:5173')
+    .send({ content: '测试记录' })
+  const deleteResponse = await request(app)
+    .delete('/api/notes/1665f34f-bf7c-47f1-a726-f35f79180fb1')
+    .set('Origin', 'http://localhost:5173')
+
+  assert.equal(listResponse.status, 401)
+  assert.equal(createResponse.status, 401)
+  assert.equal(deleteResponse.status, 401)
+})

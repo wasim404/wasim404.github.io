@@ -287,7 +287,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .section-heading h2 { margin: 10px 0 0; font-size: clamp(30px, 3vw, 42px); letter-spacing: -.035em; }
 .section-heading > p { margin: 0; color: var(--ink-soft); line-height: 1.7; font-size: 13px; }
 .progress-grid { display: grid; grid-template-columns: .85fr 1.25fr 1.3fr; gap: 17px; }
-.progress-card, .month-progress-card, .day-progress-card, .focus-dice-card, .studio-placeholder {
+.progress-card, .month-progress-card, .day-progress-card, .focus-dice-card, .note-quick-card, .studio-placeholder {
   border: 0;
   border-radius: 22px;
   background: rgba(255,253,248,.82);
@@ -333,7 +333,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
 
 .studio-section { padding: 80px 0 90px; }
 .studio-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 17px; }
-.focus-dice-card, .studio-placeholder { aspect-ratio: 1; min-width: 0; }
+.focus-dice-card, .note-quick-card, .studio-placeholder { aspect-ratio: 1; min-width: 0; }
 .focus-dice-card { display: grid; grid-template-rows: auto 1fr auto; padding: 24px; }
 .focus-dice-card__head { display: flex; align-items: center; justify-content: space-between; color: var(--ink); font-size: 12px; font-weight: 700; }
 .focus-dice-card__head button { width: 30px; height: 30px; border: 0; border-radius: 50%; color: var(--ink-soft); background: var(--paper); cursor: pointer; font-size: 15px; }
@@ -344,6 +344,18 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .dice-start-button { display: flex; align-items: center; justify-content: space-between; padding: 11px 13px; border-radius: 9px; background: var(--ink); color: #fff; font-size: 11px; font-weight: 700; text-decoration: none; transition: background .2s ease; }
 .dice-start-button:hover { background: #245244; }
 .dice-start-button:focus-visible { outline: 3px solid rgba(119,185,159,.32); outline-offset: 2px; }
+.note-quick-card { position: relative; display: grid; grid-template-rows: auto 1fr auto; overflow: hidden; padding: 24px; background: linear-gradient(145deg, rgba(255,253,248,.96), rgba(250,243,222,.82)); }
+.note-quick-card::after { content: ''; position: absolute; right: -35px; bottom: 30px; width: 110px; height: 110px; border-radius: 50%; background: rgba(230,184,92,.12); pointer-events: none; }
+.note-quick-card__head { position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; color: var(--ink); font-size: 12px; font-weight: 700; }
+.note-quick-card__head i { display: grid; width: 30px; height: 30px; place-items: center; border-radius: 50%; color: #9a7427; background: #f6e8bd; font-size: 13px; font-style: normal; }
+.note-quick-card__preview { position: relative; z-index: 1; align-self: center; justify-self: center; width: 48%; min-width: 80px; padding: 20px 14px 15px; border-radius: 8px 8px 13px 8px; background: #fffdf7; box-shadow: 0 12px 26px rgba(112,86,35,.12); transform: rotate(-2.5deg); }
+.note-quick-card__preview::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 6px; border-radius: 8px 8px 0 0; background: var(--sun); }
+.note-quick-card__preview span { display: block; height: 3px; margin-top: 7px; border-radius: 99px; background: #e6e0cf; }
+.note-quick-card__preview span:nth-child(2) { width: 82%; }
+.note-quick-card__preview span:nth-child(3) { width: 58%; }
+.note-quick-button { position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; padding: 11px 13px; border-radius: 9px; color: #fff; background: var(--ink); font-size: 11px; font-weight: 700; text-decoration: none; transition: background .2s ease, transform .2s ease; }
+.note-quick-button:hover { background: #245244; }
+.note-quick-button:focus-visible { outline: 3px solid rgba(230,184,92,.32); outline-offset: 2px; }
 .studio-placeholder { display: grid; place-items: center; background: rgba(255,253,248,.48); box-shadow: none; }
 .studio-placeholder span { color: rgba(24,57,47,.22); font-size: 26px; font-weight: 300; }
 
@@ -352,6 +364,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
   .month-progress-card:hover,
   .day-progress-card:hover,
   .focus-dice-card:hover,
+  .note-quick-card:hover,
   .studio-placeholder:hover {
     transform: translateY(-8px);
     box-shadow: 0 18px 46px rgba(31,65,54,.1);
@@ -359,6 +372,9 @@ button, a { -webkit-tap-highlight-color: transparent; }
 }
 
 .home-footer { display: flex; justify-content: space-between; padding: 28px 0 35px; border-top: 1px solid var(--line); color: var(--ink-soft); font-size: 10px; letter-spacing: .04em; }
+.home-footer a { color: inherit; text-decoration: none; }
+.home-footer a:hover { text-decoration: underline; }
+.home-footer a:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; border-radius: 2px; }
 .home-footer i { color: var(--coral); font-style: normal; }
 
 @media (max-width: 960px) {
@@ -393,10 +409,11 @@ button, a { -webkit-tap-highlight-color: transparent; }
   .month-progress-card, .day-progress-card { padding: 22px; }
   .studio-grid { gap: 10px; }
   .focus-dice-card { padding: 14px; }
-  .focus-dice-card__head { font-size: 10px; }
-  .focus-dice-card__head button { width: 26px; height: 26px; }
+  .note-quick-card { padding: 14px; }
+  .focus-dice-card__head, .note-quick-card__head { font-size: 10px; }
+  .focus-dice-card__head button, .note-quick-card__head i { width: 26px; height: 26px; }
   .dice-display strong { font-size: 38px; }
-  .dice-start-button { padding: 9px 10px; font-size: 10px; }
+  .dice-start-button, .note-quick-button { padding: 9px 10px; font-size: 10px; }
   .home-footer { flex-direction: column; gap: 9px; }
 }
 

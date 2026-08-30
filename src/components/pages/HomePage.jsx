@@ -308,7 +308,21 @@ function HomePage() {
               开始专注 <span aria-hidden="true">→</span>
             </Link>
           </article>
-          {Array.from({ length: 3 }, (_, index) => (
+          <article className="note-quick-card">
+            <div className="note-quick-card__head">
+              <span>随手记</span>
+              <i aria-hidden="true">✎</i>
+            </div>
+            <div className="note-quick-card__preview" aria-hidden="true">
+              <span />
+              <span />
+              <span />
+            </div>
+            <Link className="note-quick-button" to="/notes">
+              即刻记录 <span aria-hidden="true">→</span>
+            </Link>
+          </article>
+          {Array.from({ length: 2 }, (_, index) => (
             <article className="studio-placeholder" aria-label={`预留功能位 ${index + 1}`} key={index}>
               <span aria-hidden="true">＋</span>
             </article>
@@ -317,7 +331,12 @@ function HomePage() {
       </section>
 
       <footer className="home-footer">
-        <span>MANOONG · 慢一点，也是在前进。</span>
+        <span>
+          MANOONG · 慢一点，也是在前进。 ·{' '}
+          <a href="https://beian.miit.gov.cn/" target="_blank" rel="noreferrer">
+            闽ICP备2026032311号
+          </a>
+        </span>
         <span>Made for focused minds <i>♥</i></span>
       </footer>
     </main>

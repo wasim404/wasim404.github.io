@@ -13,11 +13,7 @@
   overflow: hidden;
   padding: 134px 24px 70px;
   color: var(--about-ink);
-  background:
-    linear-gradient(rgba(75, 99, 154, 0.026) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(75, 99, 154, 0.026) 1px, transparent 1px),
-    var(--about-paper);
-  background-size: 58px 58px;
+  background: var(--about-paper);
 }
 
 .about-page__wash {
@@ -52,9 +48,61 @@
 
 .today-insight,
 .daily-review,
-.month-review,
-.about-future {
+.month-review {
   margin-top: 28px;
+}
+
+.statistics-hero {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 32px;
+  margin-bottom: 38px;
+}
+
+.statistics-hero p {
+  margin: 0;
+  color: var(--about-blue);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+}
+
+.statistics-hero h1 {
+  margin: 9px 0 8px;
+  font-size: clamp(38px, 5vw, 58px);
+  line-height: 1;
+  letter-spacing: -0.055em;
+}
+
+.statistics-hero > div > span {
+  color: var(--about-muted);
+  font-size: 14px;
+}
+
+.statistics-hero > a {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 15px;
+  border: 1px solid var(--about-line);
+  border-radius: 12px;
+  color: var(--about-ink);
+  background: rgba(255, 255, 255, 0.62);
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.statistics-hero > a:hover {
+  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.statistics-hero > a span {
+  color: var(--about-blue);
 }
 
 .section-heading {
@@ -1240,54 +1288,6 @@
   line-height: 1.6;
 }
 
-.about-future {
-  padding-top: 15px;
-}
-
-.about-future > div {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
-}
-
-.about-future article {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 19px;
-  border: 1px dashed rgba(72, 94, 145, 0.18);
-  border-radius: 19px;
-  background: rgba(255, 255, 255, 0.46);
-}
-
-.about-future article > span {
-  display: grid;
-  width: 38px;
-  height: 38px;
-  flex: 0 0 auto;
-  place-items: center;
-  border-radius: 12px;
-  color: var(--about-violet);
-  background: #eee9fa;
-}
-
-.about-future h3 {
-  margin: 0;
-  font-size: 13px;
-}
-
-.about-future p {
-  margin: 3px 0 0;
-  color: var(--about-muted);
-  font-size: 10px;
-}
-
-.about-future article > small {
-  margin-left: auto;
-  color: #9ca4b7;
-  font-size: 9px;
-}
-
 @keyframes about-rise {
   from {
     opacity: 0;
@@ -1342,6 +1342,12 @@
 @media (max-width: 760px) {
   .about-page {
     padding: 112px 14px 45px;
+  }
+
+  .statistics-hero {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 20px;
   }
 
   .insight-grid {
@@ -1401,10 +1407,6 @@
   .write-step__footer button {
     justify-content: space-between;
     width: 100%;
-  }
-
-  .about-future > div {
-    grid-template-columns: 1fr;
   }
 
   .month-review__header {

@@ -1,5 +1,264 @@
 @import "tailwindcss";
 
+:root {
+  --app-font-scale: 1;
+}
+
+#root {
+  min-height: 100vh;
+  zoom: var(--app-font-scale);
+}
+
+html[data-theme='dark'] {
+  color-scheme: dark;
+  --dark-page: #000;
+  --dark-surface: #111;
+  --dark-surface-raised: #181818;
+  --dark-border: #383838;
+  --dark-text: #fff;
+  --dark-muted: #c4c4c4;
+}
+
+html[data-theme='dark'] body,
+html[data-theme='dark'] #root {
+  color: var(--dark-text);
+  background: var(--dark-page) !important;
+}
+
+html[data-theme='dark'] :where(
+  .home-shell,
+  .focus-page,
+  .schedule-page,
+  .about-page,
+  .settings-page,
+  .auth-page,
+  .auth-route-loading,
+  .not-found-page,
+  .notes-page
+) {
+  color: var(--dark-text) !important;
+  background: var(--dark-page) !important;
+}
+
+html[data-theme='dark'] .focus-page {
+  --focus-bg: var(--dark-page);
+  --focus-panel: var(--dark-surface);
+  --focus-panel-solid: var(--dark-surface);
+  --focus-line: var(--dark-border);
+  --focus-muted: var(--dark-muted);
+}
+
+html[data-theme='dark'] .schedule-page {
+  --schedule-paper: var(--dark-page);
+  --schedule-card: var(--dark-surface);
+  --schedule-line: var(--dark-border);
+  --schedule-muted: var(--dark-muted);
+}
+
+html[data-theme='dark'] .about-page {
+  --about-paper: var(--dark-page);
+  --about-card: var(--dark-surface);
+  --about-line: var(--dark-border);
+  --about-muted: var(--dark-muted);
+  --about-blue-soft: #171c28;
+}
+
+html[data-theme='dark'] .settings-page,
+html[data-theme='dark'] .appearance-dialog {
+  --settings-paper: var(--dark-page);
+  --settings-card: var(--dark-surface);
+  --settings-line: var(--dark-border);
+  --settings-muted: var(--dark-muted);
+}
+
+html[data-theme='dark'] body :where(
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  p,
+  span,
+  small,
+  strong,
+  b,
+  em,
+  label,
+  legend,
+  time,
+  a,
+  button,
+  li
+) {
+  color: var(--dark-text) !important;
+}
+
+html[data-theme='dark'] :where(
+  .site-navbar,
+  #about-navigation-menu,
+  .analog-clock__face,
+  .today-card,
+  .progress-card,
+  .month-progress-card,
+  .day-progress-card,
+  .focus-dice-card,
+  .note-quick-card,
+  .note-quick-card__preview,
+  .studio-placeholder,
+  .progress-ring__inner,
+  .focus-panel,
+  .focus-summary,
+  .focus-launch,
+  .focus-dialog,
+  .focus-dialog__auto-continue,
+  .early-focus-progress,
+  .focus-controls,
+  .focus-celebration__result,
+  .focus-celebration__task,
+  .care-settings label,
+  .calendar-panel,
+  .agenda-panel,
+  .schedule-modal,
+  .schedule-delete,
+  .schedule-time-wheels,
+  .time-choice button,
+  .recurrence-picker__modes > button,
+  .weekday-picker button,
+  .time-wheel-column__selection,
+  .flex-task,
+  .timeline-task__card,
+  .metric-card,
+  .focus-goal-control,
+  .review-card,
+  .review-feedback,
+  .month-review__card,
+  .month-total,
+  .month-average__score,
+  .review-calendar,
+  .review-day,
+  .review-day-detail,
+  .writing-prompts span,
+  .score-scale__button,
+  .settings-group,
+  .settings-roadmap,
+  .settings-group__icon,
+  .settings-item > span,
+  .settings-hero > a,
+  .appearance-dialog,
+  .font-size-options button,
+  .display-mode-options button,
+  .auth-card,
+  .auth-verification-panel,
+  .auth-binding,
+  .profile-list div,
+  .guest-login-hint,
+  .data-migration-card,
+  .not-found-secondary,
+  .not-found-path code,
+  .not-found-visual,
+  .not-found-note,
+  .notes-page article,
+  .notes-page section[class*='rounded'],
+  .notes-page .modal-card,
+  [class*='bg-white']
+) {
+  border-color: var(--dark-border) !important;
+  background-color: var(--dark-surface) !important;
+  background-image: none !important;
+}
+
+html[data-theme='dark'] :where(
+  input,
+  textarea,
+  select,
+  .time-wheel-column__frame,
+  .recurrence-settings,
+  .priority-picker__grid button,
+  .task-options button,
+  .mode-switch button,
+  .duration-stepper,
+  .duration-presets button
+) {
+  color: var(--dark-text) !important;
+  border-color: var(--dark-border) !important;
+  background: #0b0b0b !important;
+  caret-color: var(--dark-text);
+}
+
+html[data-theme='dark'] :where(
+  .agenda-empty button,
+  .schedule-modal__footer button,
+  .focus-dialog__actions button,
+  .not-found-primary,
+  .primary-button,
+  .dice-start-button,
+  .note-quick-button,
+  .appearance-dialog__footer > button
+) {
+  border-color: #4a4a4a !important;
+  color: #fff !important;
+  background: #202020 !important;
+}
+
+html[data-theme='dark'] :where(
+  .task-options button.is-selected,
+  .mode-switch button.is-active,
+  .duration-presets button.is-active,
+  .time-choice button.is-active,
+  .recurrence-picker__modes > button.is-active,
+  .font-size-options button.is-selected,
+  .display-mode-options button.is-selected
+) {
+  border-color: #777 !important;
+  background: var(--dark-surface-raised) !important;
+  box-shadow: inset 0 0 0 1px #777 !important;
+}
+
+html[data-theme='dark'] :where(
+  .about-page__wash,
+  .settings-page__wash,
+  .focus-page__orb
+) {
+  display: none;
+}
+
+html[data-theme='dark'] .clock-tick::before {
+  background: #777 !important;
+}
+
+html[data-theme='dark'] .clock-tick--hour::before {
+  background: #fff !important;
+}
+
+html[data-theme='dark'] .clock-hand {
+  background: #fff !important;
+}
+
+html[data-theme='dark'] .clock-hand--minute {
+  background: #bdbdbd !important;
+}
+
+html[data-theme='dark'] .clock-pin {
+  border-color: #fff !important;
+  background: #000 !important;
+}
+
+html[data-theme='dark'] :where(.task-visual i, .month-days span) {
+  border-color: var(--dark-border) !important;
+  background-color: #242424;
+}
+
+html[data-theme='dark'] [data-priority] {
+  --task-priority-soft: #1b1b1b;
+  --task-priority-ink: #fff;
+}
+
+html[data-theme='dark'] ::placeholder {
+  color: #aaa !important;
+  opacity: 1;
+}
+
 @keyframes modal-backdrop-in {
   from {
     opacity: 0;

@@ -32,6 +32,9 @@ Vite 会将 `/api` 代理到 `http://127.0.0.1:3000`。邮件优先使用 `RESEN
 - `GET /api/data`（需登录）
 - `PUT /api/data/:key`（需登录）
 - `POST /api/data/migrate`（需登录，首次合并本机数据）
+- `GET /api/notes`（需登录，获取当前账户的随手记）
+- `POST /api/notes`（需登录，创建随手记）
+- `DELETE /api/notes/:id`（需登录，删除当前账户的指定随手记）
 
 所有写请求需要与 `CLIENT_ORIGIN` 相同的 `Origin` 请求头。认证凭据仅通过 HttpOnly Session Cookie 传递，前端不接触或保存 Session Token。
 

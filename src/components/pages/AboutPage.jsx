@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import {
   isTaskCompletedOnDate,
   taskOccursOnDate,
@@ -539,6 +540,17 @@ function AboutPage() {
       <div className="about-page__wash about-page__wash--two" />
 
       <div className="about-shell">
+        <header className="statistics-hero">
+          <div>
+            <p>STATISTICS</p>
+            <h1>数据统计</h1>
+            <span>回顾你的专注、任务与每日状态。</span>
+          </div>
+          <Link to="/about">
+            前往设置 <span aria-hidden="true">→</span>
+          </Link>
+        </header>
+
         <section className="today-insight">
           <div className="insight-grid">
             <article className="metric-card metric-card--focus">
@@ -734,26 +746,6 @@ function AboutPage() {
           today={today}
         />
 
-        <section className="about-future">
-          <header className="section-heading">
-            <div>
-              <p>MORE TO COME</p>
-              <h2>这里还会慢慢长出更多内容</h2>
-            </div>
-          </header>
-          <div>
-            <article>
-              <span>⚙</span>
-              <div><h3>偏好与设置</h3><p>提醒、数据和个性化选项</p></div>
-              <small>即将开放</small>
-            </article>
-            <article>
-              <span>✉</span>
-              <div><h3>写给开发者</h3><p>分享想法，帮助 MANOONG 变得更好</p></div>
-              <small>即将开放</small>
-            </article>
-          </div>
-        </section>
       </div>
     </main>
   )
