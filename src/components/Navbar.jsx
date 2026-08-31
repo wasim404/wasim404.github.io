@@ -82,7 +82,7 @@ function Navbar() {
   const isAboutActive = location.pathname.startsWith('/about')
 
   return (
-    <header className="site-navbar fixed left-0 top-0 z-50 w-full border-b border-[#18392f]/10 bg-[#f7f4ed]/90 backdrop-blur-xl">
+    <header className="site-navbar fixed left-0 top-0 z-50 w-full bg-[#f7f4ed]/90 backdrop-blur-xl">
       <nav className="mx-auto flex h-[72px] max-w-[1180px] items-center px-3 sm:h-22 sm:px-6" aria-label="主导航">
         <NavLink
           to="/"

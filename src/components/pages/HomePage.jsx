@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { getDailyQuote } from '../../data/dailyQuotes'
 import './HomePage.css'
 import { setAccountStorageItem } from '../../services/accountData'
-import beianIcon from '../../../beian.png'
+import beianIcon from '../../assets/beian.png'
 
 const pad = (value) => String(value).padStart(2, '0')
 
