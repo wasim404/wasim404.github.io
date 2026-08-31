@@ -312,14 +312,17 @@ function NotesPage() {
             aria-labelledby="note-editor-title"
           >
             <div className="mb-5 flex items-center justify-between gap-4">
-              <h2 className="m-0 text-2xl font-bold tracking-[-0.03em]" id="note-editor-title">
-                {editingNote ? '查看并编辑随手记' : '新建记录'}
+              <h2
+                className={editingNote ? 'sr-only' : 'm-0 text-2xl font-bold tracking-[-0.03em]'}
+                id="note-editor-title"
+              >
+                {editingNote ? '编辑随手记' : '新建记录'}
               </h2>
               <button
                 type="button"
                 onClick={closeComposer}
                 disabled={isSaving}
-                className="grid size-9 place-items-center rounded-xl bg-[#f0f1ec] text-xl text-[#718079] transition hover:bg-[#e5e8e1] hover:text-[#20332e] disabled:opacity-40"
+                className="ml-auto grid size-9 place-items-center rounded-xl bg-[#f0f1ec] text-xl text-[#718079] transition hover:bg-[#e5e8e1] hover:text-[#20332e] disabled:opacity-40"
                 aria-label="关闭"
               >
                 ×

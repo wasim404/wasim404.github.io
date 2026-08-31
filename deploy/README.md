@@ -48,7 +48,15 @@ npm run db:migrate
 sudo ln -sfn /var/www/manoong/releases/当前版本 /var/www/manoong/current
 ```
 
-每次发布先在新目录构建和迁移，验证后再原子切换 `current` 链接。不要把 `.env` 放进仓库或前端构建目录。
+每次发布先在新目录构建和迁移，验证后再原子切换 `current` 链接。API 服务已经安装时，切换完成后必须重启进程，让 Node 加载新版本中的路由：
+
+```bash
+sudo systemctl restart manoong-api
+sudo systemctl is-active manoong-api
+curl http://127.0.0.1:3000/api/health
+```
+
+如果只更新静态文件而未重启 API，新前端调用新增接口时会收到“接口不存在”。不要把 `.env` 放进仓库或前端构建目录。
 
 ## 4. systemd
 
