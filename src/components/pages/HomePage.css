@@ -371,10 +371,13 @@ button, a { -webkit-tap-highlight-color: transparent; }
   }
 }
 
-.home-footer { display: flex; justify-content: space-between; padding: 28px 0 35px; border-top: 1px solid var(--line); color: var(--ink-soft); font-size: 10px; letter-spacing: .04em; }
+.home-footer { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; padding: 28px 0 35px; border-top: 1px solid var(--line); color: var(--ink-soft); font-size: 10px; letter-spacing: .04em; }
+.home-footer__legal { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 12px; }
 .home-footer a { color: inherit; text-decoration: none; }
 .home-footer a:hover { text-decoration: underline; }
 .home-footer a:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; border-radius: 2px; }
+.home-footer__beian { display: inline-flex; align-items: center; gap: 5px; }
+.home-footer__beian img { width: 18px; height: 20px; object-fit: contain; }
 .home-footer i { color: var(--coral); font-style: normal; }
 
 @media (max-width: 960px) {

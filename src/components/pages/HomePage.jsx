@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { getDailyQuote } from '../../data/dailyQuotes'
 import './HomePage.css'
 import { setAccountStorageItem } from '../../services/accountData'
+import beianIcon from '../../../beian.png'
 
 const pad = (value) => String(value).padStart(2, '0')
 
@@ -331,10 +332,19 @@ function HomePage() {
       </section>
 
       <footer className="home-footer">
-        <span>
+        <span className="home-footer__legal">
           MANOONG · 慢一点，也是在前进。 ·{' '}
           <a href="https://beian.miit.gov.cn/" target="_blank" rel="noreferrer">
             闽ICP备2026032311号
+          </a>
+          <a
+            className="home-footer__beian"
+            href="https://beian.mps.gov.cn/#/query/webSearch?code=35011102351277"
+            target="_blank"
+            rel="noreferrer"
+          >
+            <img src={beianIcon} alt="" aria-hidden="true" />
+            闽公网安备35011102351277号
           </a>
         </span>
         <span>Made for focused minds <i>♥</i></span>
