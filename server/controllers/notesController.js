@@ -2,6 +2,7 @@ import {
   deleteNoteByUser,
   findNotesByUserId,
   insertNote,
+  updateNoteByUser,
 } from '../db/notes.repository.js'
 import { noteIdSchema } from '../validation/notes.schemas.js'
 
@@ -21,6 +22,28 @@ export async function createNote(request, response, next) {
       request.validatedBody.content,
     )
     response.status(201).json({ note })
+  } catch (error) {
+    next(error)
+  }
+}
+
+export async function updateNote(request, response, next) {
+  try {
+    const noteId = noteIdSchema.safeParse(request.params.id)
+    if (!noteId.success) {
+      return response.status(404).json({ error: '随手记不存在' })
+    }
+
+    const note = await updateNoteByUser(
+      request.user.id,
+      noteId.data,
+      request.validatedBody.content,
+    )
+    if (!note) {
+      return response.status(404).json({ error: '随手记不存在' })
+    }
+
+    response.json({ note })
   } catch (error) {
     next(error)
   }

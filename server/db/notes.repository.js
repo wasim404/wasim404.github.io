@@ -28,6 +28,17 @@ export async function insertNote(userId, content, client = { query }) {
   return result.rows[0]
 }
 
+export async function updateNoteByUser(userId, noteId, content, client = { query }) {
+  const result = await client.query(
+    `UPDATE notes
+     SET content = $3, updated_at = NOW()
+     WHERE user_id = $1 AND id = $2
+     RETURNING ${noteFields}`,
+    [userId, noteId, content],
+  )
+  return result.rows[0] ?? null
+}
+
 export async function deleteNoteByUser(userId, noteId, client = { query }) {
   const result = await client.query(
     `DELETE FROM notes
