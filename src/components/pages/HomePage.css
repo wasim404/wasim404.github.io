@@ -377,7 +377,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .home-footer a:hover { text-decoration: underline; }
 .home-footer a:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; border-radius: 2px; }
 .home-footer__beian { display: inline-flex; align-items: center; gap: 5px; }
-.home-footer__beian img { width: 18px; height: 20px; object-fit: contain; }
+.home-footer__beian img { width: auto; height: 20px; object-fit: contain; }
 .home-footer i { color: var(--coral); font-style: normal; }
 
 @media (max-width: 960px) {
