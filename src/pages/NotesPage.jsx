@@ -385,17 +385,11 @@ function NotesPage() {
             aria-labelledby="delete-note-title"
             aria-describedby="delete-note-description"
           >
-            <span className="grid size-12 place-items-center rounded-2xl bg-[#f8e9e5] text-xl text-[#a74e42]" aria-hidden="true">
-              ×
-            </span>
-            <h2 className="mb-0 mt-5 text-2xl font-bold tracking-[-0.03em]" id="delete-note-title">
+            <h2 className="m-0 text-2xl font-bold tracking-[-0.03em]" id="delete-note-title">
               确认删除这条随手记？
             </h2>
             <p className="mt-3 text-sm leading-7 text-[#718079]" id="delete-note-description">
               删除后无法恢复。请再次确认是否继续。
-            </p>
-            <p className="mt-4 max-h-24 overflow-hidden whitespace-pre-wrap rounded-2xl bg-[#f7f5ed] px-4 py-3 text-sm leading-6 text-[#52655e]">
-              {pendingDeleteNote.content}
             </p>
             <div className="mt-6 flex justify-end gap-3">
               <button
