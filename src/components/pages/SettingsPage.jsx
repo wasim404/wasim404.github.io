@@ -14,10 +14,8 @@ import {
 const settingGroups = [
   {
     id: 'account',
-    eyebrow: 'ACCOUNT',
-    title: '用户账号设置',
+    title: '账号设置',
     description: '集中管理你的个人资料、账号安全与数据。',
-    icon: '◎',
     items: [
       { title: '个人资料', detail: '头像、昵称和个人信息' },
       { title: '账号与安全', detail: '登录方式、密码和安全验证' },
@@ -26,10 +24,8 @@ const settingGroups = [
   },
   {
     id: 'preferences',
-    eyebrow: 'PREFERENCES',
-    title: '用户使用偏好设置',
+    title: '偏好设置',
     description: '按你的习惯调整 MANOONG 的使用体验。',
-    icon: '◇',
     items: [
       { title: '通知与提醒', detail: '日程、专注和每日回顾提醒' },
       {
@@ -201,9 +197,7 @@ function SettingsPage() {
         <div className="settings-shell">
           <header className="settings-hero">
             <div>
-              <p>SETTINGS</p>
               <h1>设置</h1>
-              <span>这里将成为你管理账号与个性化体验的地方。</span>
             </div>
             <Link to="/about/statistics">
               查看数据统计 <span aria-hidden="true">→</span>
@@ -214,11 +208,7 @@ function SettingsPage() {
             {settingGroups.map((group) => (
               <section className="settings-group" key={group.id}>
                 <header className="settings-group__header">
-                  <span className="settings-group__icon" aria-hidden="true">
-                    {group.icon}
-                  </span>
                   <div>
-                    <p>{group.eyebrow}</p>
                     <h2>{group.title}</h2>
                     <span>{group.description}</span>
                   </div>
