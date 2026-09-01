@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { getDailyQuote } from '../../data/dailyQuotes'
 import './HomePage.css'
 import { setAccountStorageItem } from '../../services/accountData'
+import { useAuth } from '../../context/AuthContext'
 import beianIcon from '../../assets/beian.png'
 
 const pad = (value) => String(value).padStart(2, '0')
@@ -17,6 +18,99 @@ function getDayNumber(date) {
   return Math.floor(
     Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / 86400000,
   )
+}
+
+const GREETING_PERIODS = {
+  morning: {
+    id: 'morning',
+    messages: [
+      (name) => `早上好，${name}，新的一天，新的成长！`,
+      (name) => `早上好，${name}，MANOONG已为你准备就绪！`,
+      (name) => `早上好，${name}，MANOONG永远爱你，支持你！`,
+      (name) => `早上好，${name}，一切都在变好！`,
+    ],
+  },
+  noon: {
+    id: 'noon',
+    messages: [
+      (name) => `中午好，${name}，MANOONG等你中午小憩归来`,
+      (name) => `中午好，${name}，想好下一步怎么安排了吗？`,
+    ],
+  },
+  afternoon: {
+    id: 'afternoon',
+    messages: [
+      (name) => `下午好，${name}，MANOONG看到你正在成长！`,
+      (name) => `下午好，${name}，时间会奖励坚持的人！`,
+      (name) => `下午好，${name}，认真生活自有回响！`,
+      (name) => `下午好，${name}，你的努力不会白费！`,
+      (name) => `下午好，${name}，今天的你很不错！`,
+    ],
+  },
+  evening: {
+    id: 'evening',
+    messages: [
+      (name) => `晚上好，${name}，留点时间，照顾自己！`,
+      (name) => `晚上好，${name}，回顾一天，也拥抱自己！`,
+      (name) => `晚上好，${name}，给今天画一个句号吧。`,
+      (name) => `晚上好，${name}，放下屏幕，让自己歇会。`,
+      (name) => `晚上好，${name}，今天辛苦了！`,
+      (name) => `晚上好，${name}，今天有什么值得记住？`,
+    ],
+  },
+  night: {
+    id: 'night',
+    messages: [() => '夜深了，早点休息，祝好梦，MANOONG永远爱你！'],
+  },
+}
+
+function getGreetingPeriod(hour) {
+  if (hour >= 5 && hour < 11) return GREETING_PERIODS.morning
+  if (hour >= 11 && hour < 13) return GREETING_PERIODS.noon
+  if (hour >= 13 && hour < 18) return GREETING_PERIODS.afternoon
+  if (hour >= 18 && hour < 23) return GREETING_PERIODS.evening
+  return GREETING_PERIODS.night
+}
+
+function readCheckinTime(dateKey) {
+  const storedValue = localStorage.getItem(`manoong-daily-checkin-${dateKey}`)
+  if (!storedValue || storedValue === 'true') return null
+
+  const checkinTime = new Date(storedValue)
+  return Number.isNaN(checkinTime.getTime()) ? null : checkinTime
+}
+
+function hasDailyCheckin(dateKey) {
+  return localStorage.getItem(`manoong-daily-checkin-${dateKey}`) !== null
+}
+
+function hasSevenDayEarlyCheckinStreak(now) {
+  for (let dayOffset = 0; dayOffset < 7; dayOffset += 1) {
+    const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dayOffset)
+    const checkinTime = readCheckinTime(getDateKey(date))
+    if (
+      !checkinTime ||
+      getDateKey(checkinTime) !== getDateKey(date) ||
+      checkinTime.getHours() < 6 ||
+      checkinTime.getHours() >= 8
+    ) {
+      return false
+    }
+  }
+  return true
+}
+
+function getStableGreeting(period, dateKey, ownerKey, displayName) {
+  const storageKey = `manoong-home-greeting-${ownerKey}-${dateKey}-${period.id}`
+  const storedIndex = Number(localStorage.getItem(storageKey))
+  let messageIndex = storedIndex
+
+  if (!Number.isInteger(storedIndex) || storedIndex < 0 || storedIndex >= period.messages.length) {
+    messageIndex = Math.floor(Math.random() * period.messages.length)
+    localStorage.setItem(storageKey, String(messageIndex))
+  }
+
+  return period.messages[messageIndex](displayName)
 }
 
 const unlockParticles = Array.from({ length: 24 }, (_, index) => {
@@ -82,22 +176,18 @@ function ProgressRing({ value, label, detail, tone = 'mint' }) {
 }
 
 function HomePage() {
+  const { user } = useAuth()
   const [now, setNow] = useState(() => new Date())
   const dateKey = getDateKey(now)
   const [focusMinutes, setFocusMinutes] = useState(25)
   const [checkinState, setCheckinState] = useState(() => ({
     dateKey,
-    status:
-      localStorage.getItem(`manoong-daily-checkin-${dateKey}`) === 'true'
-        ? 'unlocked'
-        : 'locked',
+    status: hasDailyCheckin(dateKey) ? 'unlocked' : 'locked',
   }))
   const checkinStatus =
     checkinState.dateKey === dateKey
       ? checkinState.status
-      : localStorage.getItem(`manoong-daily-checkin-${dateKey}`) === 'true'
-        ? 'unlocked'
-        : 'locked'
+      : hasDailyCheckin(dateKey) ? 'unlocked' : 'locked'
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 1000)
@@ -116,6 +206,23 @@ function HomePage() {
 
   const progress = useMemo(() => getTimeProgress(now), [now])
   const dailyQuote = useMemo(() => getDailyQuote(getDayNumber(now)), [now])
+  const greetingPeriod = getGreetingPeriod(now.getHours())
+  const hasEarlyCheckinStreak = useMemo(() => {
+    if (checkinStatus === 'locked') return false
+    return hasSevenDayEarlyCheckinStreak(new Date(`${dateKey}T12:00:00`))
+  }, [dateKey, checkinStatus])
+  const greeting = useMemo(() => {
+    if (greetingPeriod.id === 'morning' && hasEarlyCheckinStreak) {
+      return `早上好，${user?.username || '朋友'}，连续7天早起打卡，棒棒哒！`
+    }
+
+    return getStableGreeting(
+      greetingPeriod,
+      dateKey,
+      user?.id || 'guest',
+      user?.username || '朋友',
+    )
+  }, [dateKey, greetingPeriod, hasEarlyCheckinStreak, user?.id, user?.username])
   const weekday = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'][now.getDay()]
   const monthCells = Array.from({ length: progress.daysInMonth }, (_, index) => index + 1)
   const minuteRotation = now.getMinutes() * 6
@@ -128,7 +235,7 @@ function HomePage() {
 
   const handleDailyCheckin = () => {
     if (checkinStatus !== 'locked') return
-    setAccountStorageItem(`manoong-daily-checkin-${dateKey}`, 'true')
+    setAccountStorageItem(`manoong-daily-checkin-${dateKey}`, now.toISOString())
     setCheckinState({ dateKey, status: 'unlocking' })
   }
 
@@ -286,7 +393,7 @@ function HomePage() {
               <i style={{ left: `${progress.day}%` }} />
             </div>
             <div className="day-labels"><span>00:00</span><span>12:00</span><span>24:00</span></div>
-            <p>今天还有 <b>{24 - progress.hour} 小时</b>，留一点给真正重要的事。</p>
+            <p aria-live="polite">{greeting}</p>
           </article>
         </div>
       </section>

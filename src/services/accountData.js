@@ -21,8 +21,9 @@ export function collectLocalAccountData() {
   for (let index = 0; index < localStorage.length; index += 1) {
     const key = localStorage.key(index)
     if (key?.startsWith('manoong-daily-checkin-')) {
+      const storedValue = localStorage.getItem(key)
       checkins[key.slice('manoong-daily-checkin-'.length)] =
-        localStorage.getItem(key) === 'true'
+        storedValue === 'true' ? true : storedValue
     }
   }
 
@@ -84,7 +85,12 @@ export function applyAccountData(data, userId) {
   }
   oldCheckinKeys.forEach((key) => localStorage.removeItem(key))
   for (const [date, checked] of Object.entries(data.checkins || {})) {
-    if (checked) localStorage.setItem(`manoong-daily-checkin-${date}`, 'true')
+    if (checked) {
+      localStorage.setItem(
+        `manoong-daily-checkin-${date}`,
+        typeof checked === 'string' ? checked : 'true',
+      )
+    }
   }
   if (userId) localStorage.setItem(ACCOUNT_CACHE_OWNER_KEY, userId)
   window.dispatchEvent(new CustomEvent(ACCOUNT_DATA_APPLIED_EVENT))
