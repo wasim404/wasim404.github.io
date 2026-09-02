@@ -355,11 +355,21 @@ function HomePage() {
         </div>
 
         <div className="progress-grid">
-          <ProgressRing
-            value={progress.year}
-            label="今年"
-            detail={`第 ${progress.dayOfYear} / ${progress.daysInYear} 天`}
-          />
+          <article className="day-progress-card">
+            <div className="day-progress-card__head">
+              <div>
+                <span>今日进度</span>
+                <strong>{progress.day.toFixed(1)}<small>%</small></strong>
+              </div>
+              <Icon>☼</Icon>
+            </div>
+            <div className="day-track">
+              <span style={{ width: `${progress.day}%` }} />
+              <i style={{ left: `${progress.day}%` }} />
+            </div>
+            <div className="day-labels"><span>00:00</span><span>12:00</span><span>24:00</span></div>
+            <p aria-live="polite">{greeting}</p>
+          </article>
           <article className="month-progress-card">
             <div className="month-progress-card__head">
               <div>
@@ -382,21 +392,11 @@ function HomePage() {
               <span>还有 {progress.daysInMonth - progress.dayOfMonth} 天</span>
             </div>
           </article>
-          <article className="day-progress-card">
-            <div className="day-progress-card__head">
-              <div>
-                <span>今日进度</span>
-                <strong>{progress.day.toFixed(1)}<small>%</small></strong>
-              </div>
-              <Icon>☼</Icon>
-            </div>
-            <div className="day-track">
-              <span style={{ width: `${progress.day}%` }} />
-              <i style={{ left: `${progress.day}%` }} />
-            </div>
-            <div className="day-labels"><span>00:00</span><span>12:00</span><span>24:00</span></div>
-            <p aria-live="polite">{greeting}</p>
-          </article>
+          <ProgressRing
+            value={progress.year}
+            label="今年"
+            detail={`第 ${progress.dayOfYear} / ${progress.daysInYear} 天`}
+          />
         </div>
       </section>
 

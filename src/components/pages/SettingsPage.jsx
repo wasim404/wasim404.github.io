@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
+import ProfileModal from '../profile/ProfileModal'
 import './SettingsPage.css'
 import {
   applyFontSizePreference,
@@ -17,7 +18,7 @@ const settingGroups = [
     title: '账号设置',
     description: '集中管理你的个人资料、账号安全与数据。',
     items: [
-      { title: '个人资料', detail: '头像、昵称和个人信息' },
+      { title: '个人资料', detail: '头像、昵称和个人信息', action: 'profile' },
       { title: '账号与安全', detail: '登录方式、密码和安全验证' },
       { title: '数据管理', detail: '数据同步、导出与账号数据' },
     ],
@@ -182,6 +183,7 @@ function SettingsPage() {
   const [fontSizeId, setFontSizeId] = useState(readFontSizePreference)
   const [theme, setTheme] = useState(readThemePreference)
   const [isAppearanceOpen, setIsAppearanceOpen] = useState(false)
+  const [isProfileOpen, setIsProfileOpen] = useState(false)
 
   function applyAppearance(nextFontSizeId, nextTheme) {
     setFontSizeId(applyFontSizePreference(nextFontSizeId))
@@ -227,17 +229,22 @@ function SettingsPage() {
                             ? `${getFontSizeOption(fontSizeId).label} · ${
                                 theme === 'dark' ? '深色' : '浅色'
                               }`
+                            : item.action === 'profile'
+                              ? '管理资料'
                             : '即将开放'}
-                          {item.action === 'appearance' && <b aria-hidden="true">→</b>}
+                          {item.action && <b aria-hidden="true">→</b>}
                         </span>
                       </>
                     )
 
-                    return item.action === 'appearance' ? (
+                    return item.action ? (
                       <button
                         type="button"
                         className="settings-item settings-item--action"
-                        onClick={() => setIsAppearanceOpen(true)}
+                        onClick={() => {
+                          if (item.action === 'appearance') setIsAppearanceOpen(true)
+                          if (item.action === 'profile') setIsProfileOpen(true)
+                        }}
                         aria-haspopup="dialog"
                         key={item.title}
                       >
@@ -271,6 +278,9 @@ function SettingsPage() {
           onApply={applyAppearance}
           onClose={() => setIsAppearanceOpen(false)}
         />
+      )}
+      {isProfileOpen && (
+        <ProfileModal onClose={() => setIsProfileOpen(false)} />
       )}
     </>
   )

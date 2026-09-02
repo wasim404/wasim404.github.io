@@ -542,9 +542,7 @@ function AboutPage() {
       <div className="about-shell">
         <header className="statistics-hero">
           <div>
-            <p>STATISTICS</p>
             <h1>数据统计</h1>
-            <span>回顾你的专注、任务与每日状态。</span>
           </div>
           <Link to="/about">
             前往设置 <span aria-hidden="true">→</span>

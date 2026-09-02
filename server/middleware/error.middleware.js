@@ -10,5 +10,6 @@ export function errorHandler(error, _request, response, next) {
 
   response.status(status).json({
     error: status >= 500 ? '服务器暂时无法处理请求' : error.message,
+    ...(status < 500 && error.details ? error.details : {}),
   })
 }

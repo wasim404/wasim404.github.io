@@ -7,14 +7,14 @@ const password = z
   .max(128, '密码不能超过 128 位')
   .regex(/[a-zA-Z]/, '密码需要包含字母')
   .regex(/[0-9]/, '密码需要包含数字')
-const username = z
+export const usernameSchema = z
   .string()
   .trim()
   .min(2, '用户名至少需要 2 个字符')
   .max(30, '用户名不能超过 30 个字符')
   .regex(/^[\p{L}\p{N}_-]+$/u, '用户名只能包含文字、数字、下划线或短横线')
 
-export const registerSchema = z.object({ username, email, password }).strict()
+export const registerSchema = z.object({ username: usernameSchema, email, password }).strict()
 export const loginSchema = z.object({
   login: z.string().trim().min(1, '请输入用户名或邮箱').max(320),
   password: z.string().min(1).max(128),

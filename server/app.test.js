@@ -48,3 +48,17 @@ test('notes API requires an authenticated session', async () => {
   assert.equal(updateResponse.status, 401)
   assert.equal(deleteResponse.status, 401)
 })
+
+test('profile API requires an authenticated session', async () => {
+  const app = createApp()
+  const origin = 'http://localhost:5173'
+  const responses = await Promise.all([
+    request(app).get('/api/profile'),
+    request(app).patch('/api/profile').set('Origin', origin).send({ bio: '测试' }),
+    request(app).patch('/api/profile/username').set('Origin', origin).send({ username: 'new_name' }),
+    request(app).patch('/api/profile/gender').set('Origin', origin).send({ gender: 'male' }),
+    request(app).post('/api/profile/avatar').set('Origin', origin),
+  ])
+
+  responses.forEach((response) => assert.equal(response.status, 401))
+})

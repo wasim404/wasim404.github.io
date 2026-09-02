@@ -1,0 +1,71 @@
+@keyframes profile-backdrop-in {
+  from { opacity: 0; }
+}
+
+@keyframes profile-modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.98);
+  }
+}
+
+@keyframes profile-loading-spin {
+  to { transform: rotate(360deg); }
+}
+
+.profile-modal-backdrop {
+  animation: profile-backdrop-in 0.2s ease both;
+}
+
+.profile-modal,
+.profile-confirm {
+  animation: profile-modal-in 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.profile-loading {
+  animation: profile-loading-spin 0.8s linear infinite;
+}
+
+html[data-theme='dark'] .profile-modal,
+html[data-theme='dark'] .profile-confirm,
+html[data-theme='dark'] .profile-modal > header {
+  color: #fff;
+  border-color: #383838;
+  background: #111;
+}
+
+html[data-theme='dark'] .profile-section {
+  border-color: #383838;
+  background: #181818;
+}
+
+html[data-theme='dark'] .profile-input {
+  color: #fff;
+  border-color: #484848;
+  background: #0b0b0b;
+}
+
+html[data-theme='dark'] .profile-muted {
+  color: #c4c4c4;
+}
+
+@media (max-width: 520px) {
+  .profile-modal-backdrop {
+    align-items: end;
+    padding: 0;
+  }
+
+  .profile-modal {
+    max-height: calc(100dvh - 8px);
+    border-radius: 24px 24px 0 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .profile-modal-backdrop,
+  .profile-modal,
+  .profile-confirm,
+  .profile-loading {
+    animation: none;
+  }
+}

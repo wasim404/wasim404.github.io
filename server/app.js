@@ -10,6 +10,11 @@ import { userRouter } from './routes/user.routes.js'
 import { verifyRequestOrigin } from './middleware/origin.middleware.js'
 import { dataRouter } from './routes/data.routes.js'
 import { notesRouter } from './routes/notes.js'
+import { profileRouter } from './routes/profile.routes.js'
+import {
+  getAvatarPublicPath,
+  getAvatarUploadDirectory,
+} from './services/avatar-storage.service.js'
 
 export function createApp() {
   const app = express()
@@ -21,6 +26,16 @@ export function createApp() {
   app.use(express.json({ limit: '1mb' }))
   app.use(express.urlencoded({ extended: false, limit: '32kb' }))
   app.use(cookieParser())
+  const avatarPublicPath = getAvatarPublicPath()
+  if (avatarPublicPath) {
+    app.use(
+      avatarPublicPath,
+      express.static(getAvatarUploadDirectory(), {
+        immutable: true,
+        maxAge: '7d',
+      }),
+    )
+  }
   app.use('/api', verifyRequestOrigin)
 
   app.use('/api/health', healthRouter)
@@ -28,6 +43,7 @@ export function createApp() {
   app.use('/api/user', userRouter)
   app.use('/api/data', dataRouter)
   app.use('/api/notes', notesRouter)
+  app.use('/api/profile', profileRouter)
 
   app.use(notFoundHandler)
   app.use(errorHandler)

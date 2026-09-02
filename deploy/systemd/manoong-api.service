@@ -17,7 +17,7 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=/var/www/manoong
+ReadWritePaths=/var/www/manoong /var/lib/manoong/uploads/avatars
 
 [Install]
 WantedBy=multi-user.target

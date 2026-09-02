@@ -36,6 +36,11 @@ Vite 会将 `/api` 代理到 `http://127.0.0.1:3000`。邮件优先使用 `RESEN
 - `POST /api/notes`（需登录，创建随手记）
 - `PATCH /api/notes/:id`（需登录，编辑当前账户的指定随手记）
 - `DELETE /api/notes/:id`（需登录，删除当前账户的指定随手记）
+- `GET /api/profile`（需登录，读取当前账户完整个人资料）
+- `PATCH /api/profile`（需登录，修改生日与个性签名）
+- `PATCH /api/profile/username`（需登录，按 24 小时规则修改用户名）
+- `PATCH /api/profile/gender`（需登录，一次性设置性别）
+- `POST /api/profile/avatar`（需登录，上传或更换头像）
 
 所有写请求需要与 `CLIENT_ORIGIN` 相同的 `Origin` 请求头。认证凭据仅通过 HttpOnly Session Cookie 传递，前端不接触或保存 Session Token。
 

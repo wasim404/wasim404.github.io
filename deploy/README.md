@@ -11,6 +11,7 @@ curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
 sudo apt install -y nodejs
 sudo adduser --system --group --home /var/www/manoong manoong
 sudo install -d -o manoong -g www-data /var/www/manoong/releases /etc/manoong
+sudo install -d -m 750 -o manoong -g www-data /var/lib/manoong/uploads/avatars
 ```
 
 ## 2. 初始化 PostgreSQL
@@ -35,7 +36,7 @@ sudo chown root:manoong /etc/manoong/manoong.env
 sudo chmod 640 /etc/manoong/manoong.env
 ```
 
-生产环境至少修改：`NODE_ENV=production`、`CLIENT_ORIGIN=https://manoong.com`、数据库密码、`CODE_HASH_SECRET`、`RESEND_API_KEY` 和 `RESEND_FROM`。可用 `openssl rand -base64 48` 生成验证码摘要密钥。Resend Key 只保存在服务器环境文件中，绝不能放进 Vite 前端变量。
+生产环境至少修改：`NODE_ENV=production`、`CLIENT_ORIGIN=https://manoong.com`、数据库密码、`CODE_HASH_SECRET`、`RESEND_API_KEY` 和 `RESEND_FROM`。头像使用 release 目录之外的 `AVATAR_UPLOAD_DIR=/var/lib/manoong/uploads/avatars`，并通过 `AVATAR_PUBLIC_BASE_URL=/uploads/avatars` 生成公开地址。可用 `openssl rand -base64 48` 生成验证码摘要密钥。Resend Key 只保存在服务器环境文件中，绝不能放进 Vite 前端变量。
 
 ## 3. 构建与迁移
 

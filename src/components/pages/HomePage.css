@@ -286,7 +286,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .section-heading { display: flex; justify-content: space-between; align-items: end; margin-bottom: 37px; }
 .section-heading h2 { margin: 10px 0 0; font-size: clamp(30px, 3vw, 42px); letter-spacing: -.035em; }
 .section-heading > p { margin: 0; color: var(--ink-soft); line-height: 1.7; font-size: 13px; }
-.progress-grid { display: grid; grid-template-columns: .85fr 1.25fr 1.3fr; gap: 17px; }
+.progress-grid { display: grid; grid-template-columns: 1.3fr 1.25fr .85fr; gap: 17px; }
 .progress-card, .month-progress-card, .day-progress-card, .focus-dice-card, .note-quick-card, .studio-placeholder {
   border: 0;
   border-radius: 22px;
@@ -294,7 +294,7 @@ button, a { -webkit-tap-highlight-color: transparent; }
   box-shadow: 0 10px 35px rgba(31,65,54,.04);
   transition: transform .24s ease, box-shadow .24s ease;
 }
-.progress-card { position: relative; padding: 27px; display: flex; align-items: center; gap: 20px; }
+.progress-card { position: relative; padding: 27px; display: flex; align-items: center; justify-content: center; gap: 20px; }
 .progress-card__title { position: absolute; top: 22px; left: 27px; color: var(--ink-soft); font-size: 12px; font-weight: 600; }
 .progress-ring {
   --progress: 0deg;
@@ -408,7 +408,6 @@ button, a { -webkit-tap-highlight-color: transparent; }
   .today-card { padding: 23px; }
   .today-card__date > strong { font-size: 64px; }
   .progress-section, .studio-section { padding-block: 65px; }
-  .progress-card { justify-content: flex-start; }
   .month-progress-card, .day-progress-card { padding: 22px; }
   .studio-grid { gap: 10px; }
   .focus-dice-card { padding: 14px; }

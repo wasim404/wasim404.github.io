@@ -60,24 +60,13 @@
   margin-bottom: 38px;
 }
 
-.statistics-hero p {
-  margin: 0;
-  color: var(--about-blue);
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.18em;
-}
-
 .statistics-hero h1 {
-  margin: 9px 0 8px;
-  font-size: clamp(38px, 5vw, 58px);
-  line-height: 1;
-  letter-spacing: -0.055em;
-}
-
-.statistics-hero > div > span {
-  color: var(--about-muted);
-  font-size: 14px;
+  margin: 0;
+  color: #20332e;
+  font-size: 48px;
+  font-weight: 700;
+  line-height: normal;
+  letter-spacing: -0.045em;
 }
 
 .statistics-hero > a {
@@ -1457,6 +1446,12 @@
 
   .review-day-detail {
     margin-top: 0;
+  }
+}
+
+@media (max-width: 639px) {
+  .statistics-hero h1 {
+    font-size: 38px;
   }
 }
 
