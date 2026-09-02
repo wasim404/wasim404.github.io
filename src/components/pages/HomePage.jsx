@@ -9,6 +9,7 @@ import beianIcon from '../../assets/beian.png'
 const pad = (value) => String(value).padStart(2, '0')
 
 const clockTicks = Array.from({ length: 60 }, (_, index) => index)
+const focusDiceOptions = Array.from({ length: 10 }, (_, index) => 15 + index * 5)
 
 function getDateKey(date) {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
@@ -229,8 +230,9 @@ function HomePage() {
   const hourRotation = (now.getHours() % 12) * 30 + now.getMinutes() * 0.5
 
   const rollFocus = () => {
-    const options = [15, 25, 35, 45, 60]
-    setFocusMinutes(options[Math.floor(Math.random() * options.length)])
+    setFocusMinutes(
+      focusDiceOptions[Math.floor(Math.random() * focusDiceOptions.length)],
+    )
   }
 
   const handleDailyCheckin = () => {
