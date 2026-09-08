@@ -89,15 +89,14 @@
 }
 
 .profile-username-summary {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 16px;
 }
 
 .profile-username-summary > button {
-  grid-column: 2;
-  justify-self: center;
+  flex: 0 0 auto;
 }
 
 .profile-gender-row {
@@ -225,14 +224,6 @@ html[data-theme='dark'] .profile-muted {
     gap: 12px;
   }
 
-  .profile-username-summary {
-    grid-template-columns: 1fr;
-  }
-
-  .profile-username-summary > button {
-    grid-column: 1;
-    margin-top: 16px;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {

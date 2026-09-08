@@ -62,7 +62,18 @@ export default function UsernameEditor({ profile, onUpdated }) {
       <div className="profile-username-summary">
         <div className="min-w-0">
           <h3 className="m-0 text-sm font-bold text-[#33415f]">用户名</h3>
-          {!isEditing && <p className="mt-2 text-base font-bold text-[#27334e]">{profile.username}</p>}
+          {!isEditing && (
+            <>
+              <p className="mt-2 text-base font-bold text-[#27334e]">{profile.username}</p>
+              {isLocked ? (
+                <p className="profile-muted mt-2 text-xs leading-5 text-[#7a849d]">
+                  {availabilityLabel(nextAvailableAt, now)}
+                </p>
+              ) : (
+                <p className="profile-muted mt-2 text-xs text-[#7a849d]">每 24 小时可修改一次</p>
+              )}
+            </>
+          )}
         </div>
         {!isLocked && !isEditing && (
           <button
@@ -95,14 +106,6 @@ export default function UsernameEditor({ profile, onUpdated }) {
         </form>
       )}
 
-      {isLocked && (
-        <p className="profile-muted mt-2 text-xs leading-5 text-[#7a849d]">
-          {availabilityLabel(nextAvailableAt, now)}
-        </p>
-      )}
-      {!isLocked && !isEditing && (
-        <p className="profile-muted mt-2 text-xs text-[#7a849d]">每 24 小时可修改一次</p>
-      )}
       {error && <p className="mt-3 text-xs text-[#a44f48]" role="alert">{error}</p>}
     </section>
   )
