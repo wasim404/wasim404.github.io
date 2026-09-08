@@ -13,6 +13,7 @@ const verificationCodes = []
 const sessions = new Map()
 const sentResetEmails = []
 let nextCodeId = 1
+let failNextPasswordUpdate = false
 
 function publicUser(user) {
   const { password_hash: _passwordHash, ...safeUser } = user
@@ -26,6 +27,7 @@ async function resetState() {
   sessions.clear()
   sentResetEmails.length = 0
   nextCodeId = 1
+  failNextPasswordUpdate = false
   users.set(registeredEmail, {
     id: '11111111-1111-4111-8111-111111111111',
     username: 'registered-user',
@@ -45,7 +47,21 @@ mock.module('./db/pool.js', {
   exports: {
     pool: {},
     query: async () => ({ rows: [] }),
-    withTransaction: async (callback) => callback(transactionClient),
+    withTransaction: async (callback) => {
+      const usersSnapshot = structuredClone([...users])
+      const codesSnapshot = structuredClone(verificationCodes)
+      const sessionsSnapshot = structuredClone([...sessions])
+      try {
+        return await callback(transactionClient)
+      } catch (error) {
+        users.clear()
+        usersSnapshot.forEach(([key, value]) => users.set(key, value))
+        verificationCodes.splice(0, verificationCodes.length, ...codesSnapshot)
+        sessions.clear()
+        sessionsSnapshot.forEach(([key, value]) => sessions.set(key, value))
+        throw error
+      }
+    },
   },
 })
 
@@ -73,6 +89,10 @@ mock.module('./db/user.repository.js', {
       if (user) {
         user.password_hash = passwordHash
         user.updated_at = new Date()
+      }
+      if (failNextPasswordUpdate) {
+        failNextPasswordUpdate = false
+        throw new Error('simulated password update failure')
       }
     },
   },
@@ -272,4 +292,37 @@ test('a valid code changes the password once and invalidates existing sessions',
   assert.equal(oldPasswordLogin.status, 401)
   assert.equal(newPasswordLogin.status, 200)
   assert.equal(oldSession.status, 401)
+})
+
+test('a password update failure rolls back and leaves the valid code reusable', async () => {
+  await resetState()
+  const app = createApp()
+  await post(app, '/api/auth/password/forgot', { email: registeredEmail })
+  const code = sentResetEmails[0].code
+  failNextPasswordUpdate = true
+
+  const failed = await post(app, '/api/auth/password/reset', {
+    email: registeredEmail,
+    code,
+    password: newPassword,
+  })
+
+  assert.equal(failed.status, 500)
+  assert.equal(await verifyPassword(users.get(registeredEmail).password_hash, oldPassword), true)
+  const rolledBackCode = verificationCodes.findLast(
+    (record) => record.type === 'password_reset_email',
+  )
+  assert.equal(rolledBackCode.used_at, null)
+
+  const retried = await post(app, '/api/auth/password/reset', {
+    email: registeredEmail,
+    code,
+    password: newPassword,
+  })
+
+  assert.equal(retried.status, 200)
+  assert.equal(await verifyPassword(users.get(registeredEmail).password_hash, newPassword), true)
+  assert.ok(verificationCodes.findLast(
+    (record) => record.type === 'password_reset_email',
+  ).used_at)
 })

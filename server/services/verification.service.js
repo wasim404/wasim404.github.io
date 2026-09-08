@@ -30,25 +30,37 @@ export async function issueVerificationCode({ userId, type, target, send }) {
 
 export async function consumeVerificationCode({ type, target, code, userId }, transactionClient) {
   const consume = async (client) => {
-    const record = await verificationCodes.findCodeForUpdate(type, target, client)
-    const invalid =
-      !record ||
-      record.user_id !== userId ||
-      new Date(record.expires_at).getTime() <= Date.now() ||
-      record.attempts >= env.VERIFICATION_MAX_ATTEMPTS
-
-    if (invalid) return false
-
-    const expectedHash = hashVerificationCode(type, target, code)
-    if (!matchesVerificationCodeHash(record.code_hash, expectedHash)) {
-      await verificationCodes.incrementAttempts(record.id, client)
-      return false
-    }
-
+    const record = await verifyVerificationCodeForUpdate(
+      { type, target, code, userId },
+      client,
+    )
+    if (!record) return false
     await verificationCodes.markCodeUsed(record.id, client)
     return true
   }
 
   if (transactionClient) return consume(transactionClient)
   return withTransaction(consume)
+}
+
+export async function verifyVerificationCodeForUpdate(
+  { type, target, code, userId },
+  transactionClient,
+) {
+  const record = await verificationCodes.findCodeForUpdate(type, target, transactionClient)
+  const invalid =
+    !record ||
+    record.user_id !== userId ||
+    new Date(record.expires_at).getTime() <= Date.now() ||
+    record.attempts >= env.VERIFICATION_MAX_ATTEMPTS
+
+  if (invalid) return null
+
+  const expectedHash = hashVerificationCode(type, target, code)
+  if (!matchesVerificationCodeHash(record.code_hash, expectedHash)) {
+    await verificationCodes.incrementAttempts(record.id, transactionClient)
+    return null
+  }
+
+  return record
 }
