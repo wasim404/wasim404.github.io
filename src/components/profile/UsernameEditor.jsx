@@ -59,7 +59,7 @@ export default function UsernameEditor({ profile, onUpdated }) {
 
   return (
     <section className="profile-row profile-identity-row">
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex items-center justify-between gap-4">
         <div>
           <h3 className="m-0 text-sm font-bold text-[#33415f]">用户名</h3>
           {!isEditing && <p className="mt-2 text-base font-bold text-[#27334e]">{profile.username}</p>}
@@ -67,7 +67,7 @@ export default function UsernameEditor({ profile, onUpdated }) {
         {!isLocked && !isEditing && (
           <button
             type="button"
-            className="shrink-0 rounded-xl border border-[#5878c7]/20 px-3 py-2 text-xs font-bold text-[#5878c7] hover:bg-[#eef3ff] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5878c7]"
+            className="shrink-0 rounded-xl border border-[#516995]/15 bg-[#edf1f8] px-4 py-2 text-xs font-bold text-[#425477] transition hover:bg-[#e3e9f4] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#5878c7]"
             onClick={() => setIsEditing(true)}
           >
             修改用户名
