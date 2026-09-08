@@ -14,6 +14,7 @@ const sessions = new Map()
 const sentResetEmails = []
 let nextCodeId = 1
 let failNextPasswordUpdate = false
+let failNextVerificationCreate = false
 
 function publicUser(user) {
   const { password_hash: _passwordHash, ...safeUser } = user
@@ -28,6 +29,7 @@ async function resetState() {
   sentResetEmails.length = 0
   nextCodeId = 1
   failNextPasswordUpdate = false
+  failNextVerificationCreate = false
   users.set(registeredEmail, {
     id: '11111111-1111-4111-8111-111111111111',
     username: 'registered-user',
@@ -106,6 +108,10 @@ mock.module('./db/verification.repository.js', {
       )) || null
     ),
     createCode: async ({ userId, type, target, codeHash, expiresAt }) => {
+      if (failNextVerificationCreate) {
+        failNextVerificationCreate = false
+        throw new Error('simulated verification code persistence failure')
+      }
       verificationCodes.forEach((record) => {
         if (record.type === type && record.target === target && !record.used_at) {
           record.used_at = new Date()
@@ -167,7 +173,12 @@ mock.module('./services/email.service.js', {
   exports: {
     sendVerificationEmail: async () => ({ mocked: true }),
     sendPasswordResetEmail: async (email, code) => {
-      sentResetEmails.push({ email, code })
+      const persisted = verificationCodes.some((record) => (
+        record.type === 'password_reset_email'
+        && record.target === email
+        && !record.used_at
+      ))
+      sentResetEmails.push({ email, code, persisted })
       return { mocked: true }
     },
   },
@@ -192,6 +203,7 @@ test('registered and unknown emails receive the same password-reset response', a
   assert.equal(sentResetEmails.length, 1)
   assert.equal(sentResetEmails[0].email, registeredEmail)
   assert.match(sentResetEmails[0].code, /^\d{6}$/)
+  assert.equal(sentResetEmails[0].persisted, true)
   assert.equal(verificationCodes[0].type, 'password_reset_email')
   assert.notEqual(verificationCodes[0].code_hash, sentResetEmails[0].code)
 })
@@ -325,4 +337,21 @@ test('a password update failure rolls back and leaves the valid code reusable', 
   assert.ok(verificationCodes.findLast(
     (record) => record.type === 'password_reset_email',
   ).used_at)
+})
+
+test('a reset code is not emailed when database persistence fails', async () => {
+  await resetState()
+  const app = createApp()
+  failNextVerificationCreate = true
+
+  const response = await post(app, '/api/auth/password/forgot', {
+    email: registeredEmail,
+  })
+
+  assert.equal(response.status, 200)
+  assert.deepEqual(response.body, {
+    message: '如果该邮箱已注册，验证码将很快发送。',
+  })
+  assert.equal(verificationCodes.length, 0)
+  assert.equal(sentResetEmails.length, 0)
 })

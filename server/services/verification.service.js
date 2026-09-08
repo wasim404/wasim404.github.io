@@ -10,7 +10,10 @@ import { HttpError } from '../utils/http-error.js'
 
 export async function issueVerificationCode({ userId, type, target, send }) {
   const latest = await verificationCodes.findLatestCode(type, target)
-  if (latest) {
+  const latestIsUsable = latest
+    && new Date(latest.expires_at).getTime() > Date.now()
+    && latest.attempts < env.VERIFICATION_MAX_ATTEMPTS
+  if (latestIsUsable) {
     const elapsedSeconds = (Date.now() - new Date(latest.created_at).getTime()) / 1000
     if (elapsedSeconds < env.VERIFICATION_RESEND_SECONDS) {
       throw new HttpError(429, `请在 ${Math.ceil(env.VERIFICATION_RESEND_SECONDS - elapsedSeconds)} 秒后重试`)
@@ -18,14 +21,24 @@ export async function issueVerificationCode({ userId, type, target, send }) {
   }
 
   const code = createVerificationCode()
-  await send(target, code)
-  await verificationCodes.createCode({
+  const record = await verificationCodes.createCode({
     userId,
     type,
     target,
     codeHash: hashVerificationCode(type, target, code),
     expiresAt: new Date(Date.now() + env.VERIFICATION_CODE_TTL_MINUTES * 60 * 1000),
   })
+
+  try {
+    await send(target, code)
+  } catch (error) {
+    try {
+      await verificationCodes.markCodeUsed(record.id)
+    } catch (cleanupError) {
+      console.error('Failed to invalidate an undelivered verification code', cleanupError)
+    }
+    throw error
+  }
 }
 
 export async function consumeVerificationCode({ type, target, code, userId }, transactionClient) {
