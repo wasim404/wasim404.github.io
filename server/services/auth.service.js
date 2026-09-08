@@ -2,6 +2,7 @@ import { withTransaction } from '../db/pool.js'
 import * as sessions from '../db/session.repository.js'
 import * as users from '../db/user.repository.js'
 import { HttpError } from '../utils/http-error.js'
+import { consumeVerificationCode } from './verification.service.js'
 import { hashPassword, verifyPassword } from './password.service.js'
 
 export async function registerWithEmail({ username, email, password }) {
@@ -51,5 +52,26 @@ export async function changePassword(userId, currentPassword, nextPassword) {
     const nextHash = await hashPassword(nextPassword)
     await users.updatePassword(userId, nextHash, client)
     await sessions.deleteUserSessions(userId, client)
+  })
+}
+
+export async function resetPasswordWithEmail({ email, code, password }) {
+  const passwordHash = await hashPassword(password)
+
+  return withTransaction(async (client) => {
+    const user = await users.findUserByEmail(email, client)
+    if (!user) return false
+
+    const verified = await consumeVerificationCode({
+      type: 'password_reset_email',
+      target: email,
+      code,
+      userId: user.id,
+    }, client)
+    if (!verified) return false
+
+    await users.updatePassword(user.id, passwordHash, client)
+    await sessions.deleteUserSessions(user.id, client)
+    return true
   })
 }

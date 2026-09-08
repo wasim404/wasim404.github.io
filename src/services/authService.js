@@ -31,6 +31,18 @@ export const authService = {
       body: JSON.stringify({ email, code }),
     })
   },
+  requestPasswordReset(email) {
+    return apiRequest('/api/auth/password/forgot', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    })
+  },
+  resetPassword(email, code, password) {
+    return apiRequest('/api/auth/password/reset', {
+      method: 'POST',
+      body: JSON.stringify({ email, code, password }),
+    })
+  },
   sendPhoneCode(phone) {
     return apiRequest('/api/auth/phone/send-code', {
       method: 'POST',

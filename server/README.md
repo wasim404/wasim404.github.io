@@ -22,6 +22,8 @@ Vite 会将 `/api` 代理到 `http://127.0.0.1:3000`。邮件优先使用 `RESEN
 - `GET /api/health`
 - `POST /api/auth/register`
 - `POST /api/auth/login`
+- `POST /api/auth/password/forgot`（发送密码重置邮箱验证码）
+- `POST /api/auth/password/reset`（验证邮箱验证码并重置密码）
 - `POST /api/auth/logout`（需登录）
 - `GET /api/auth/me`（需登录）
 - `POST /api/auth/email/send-code`

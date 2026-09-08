@@ -28,6 +28,12 @@ export const emailVerifySchema = z.object({
   email,
   code: z.string().regex(/^\d{6}$/, '请输入 6 位验证码'),
 }).strict()
+export const passwordForgotSchema = z.object({ email }).strict()
+export const passwordResetSchema = z.object({
+  email,
+  code: z.string().regex(/^\d{6}$/, '请输入 6 位验证码'),
+  password,
+}).strict()
 export const phoneCodeRequestSchema = z.object({
   phone: z.string().trim().regex(/^\+[1-9]\d{7,14}$/, '请输入带国家区号的手机号'),
 }).strict()

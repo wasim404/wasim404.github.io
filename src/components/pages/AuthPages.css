@@ -36,9 +36,8 @@
 .auth-card__switch { margin: 21px 0 0; color: #75877f; font-size: 11px; text-align: center; }
 .auth-card__switch a { color: #32755f; font-weight: 800; }
 .auth-page-notice { margin-top: 15px; }
-.auth-card__verify-link { display: block; margin: 14px auto 0; padding: 4px; border: 0; color: #52766a; background: transparent; cursor: pointer; font-size: 10px; }
-.auth-card__verify-link:hover { color: #245e4b; }
-.auth-verification-panel { margin-top: 16px; padding: 15px; border: 1px solid rgba(24,57,47,.09); border-radius: 14px; background: rgba(237,245,240,.58); }
+.auth-card__helper-link { display: block; margin: 14px auto 0; padding: 4px; border: 0; color: #52766a; background: transparent; cursor: pointer; font-size: 10px; }
+.auth-card__helper-link:hover { color: #245e4b; }
 .profile-list { display: grid; gap: 10px; margin: 22px 0; }
 .profile-list div { display: flex; justify-content: space-between; gap: 16px; padding: 12px 14px; border-radius: 12px; background: rgba(24,57,47,.045); font-size: 12px; }
 .profile-list span { color: #71847d; }

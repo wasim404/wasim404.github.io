@@ -2,7 +2,10 @@ import { env } from '../config/env.js'
 import * as authService from '../services/auth.service.js'
 import { issueSession, revokeSession, sessionCookieOptions } from '../services/session.service.js'
 import { issueVerificationCode } from '../services/verification.service.js'
-import { sendVerificationEmail } from '../services/email.service.js'
+import { sendPasswordResetEmail, sendVerificationEmail } from '../services/email.service.js'
+import { HttpError } from '../utils/http-error.js'
+
+const genericPasswordResetMessage = '如果该邮箱已注册，验证码将很快发送。'
 
 export async function register(request, response, next) {
   try {
@@ -60,4 +63,39 @@ export async function logout(request, response, next) {
 
 export function me(request, response) {
   response.json({ user: request.user })
+}
+
+export async function requestPasswordReset(request, response, next) {
+  try {
+    const { email } = request.validatedBody
+    const user = await authService.getUserByEmail(email)
+
+    if (user) {
+      try {
+        await issueVerificationCode({
+          userId: user.id,
+          type: 'password_reset_email',
+          target: email,
+          send: sendPasswordResetEmail,
+        })
+      } catch (error) {
+        // Do not reveal account existence through resend cooldowns or delivery failures.
+        if (error.status !== 429) console.error('Password reset email delivery failed', error)
+      }
+    }
+
+    response.json({ message: genericPasswordResetMessage })
+  } catch (error) {
+    next(error)
+  }
+}
+
+export async function resetPassword(request, response, next) {
+  try {
+    const changed = await authService.resetPasswordWithEmail(request.validatedBody)
+    if (!changed) throw new HttpError(400, '验证码错误或已失效')
+    response.json({ message: '密码重置成功，请使用新密码登录' })
+  } catch (error) {
+    next(error)
+  }
 }

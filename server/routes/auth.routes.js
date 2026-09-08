@@ -1,6 +1,13 @@
 import { Router } from 'express'
 import { rateLimit } from 'express-rate-limit'
-import { login, logout, me, register } from '../controllers/auth.controller.js'
+import {
+  login,
+  logout,
+  me,
+  register,
+  requestPasswordReset,
+  resetPassword,
+} from '../controllers/auth.controller.js'
 import { requireAuth } from '../middleware/auth.middleware.js'
 import { optionalAuth } from '../middleware/auth.middleware.js'
 import { validate } from '../middleware/validate.middleware.js'
@@ -8,6 +15,8 @@ import {
   emailCodeRequestSchema,
   emailVerifySchema,
   loginSchema,
+  passwordForgotSchema,
+  passwordResetSchema,
   phoneCodeRequestSchema,
   phoneVerifySchema,
   registerSchema,
@@ -37,8 +46,18 @@ const verificationLimiter = rateLimit({
   message: { error: '验证码请求过于频繁，请稍后再试' },
 })
 
+const passwordResetLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+  message: { error: '密码重置尝试次数过多，请稍后再试' },
+})
+
 authRouter.post('/register', authLimiter, validate(registerSchema), register)
 authRouter.post('/login', authLimiter, validate(loginSchema), login)
+authRouter.post('/password/forgot', verificationLimiter, validate(passwordForgotSchema), requestPasswordReset)
+authRouter.post('/password/reset', passwordResetLimiter, validate(passwordResetSchema), resetPassword)
 authRouter.post('/logout', requireAuth, logout)
 authRouter.get('/me', requireAuth, me)
 authRouter.post('/email/send-code', verificationLimiter, optionalAuth, validate(emailCodeRequestSchema), sendEmailCode)
