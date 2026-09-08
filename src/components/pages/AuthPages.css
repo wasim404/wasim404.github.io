@@ -21,6 +21,7 @@
 
 .auth-card__eyebrow { margin: 0 0 10px; color: #51917a; font-size: 10px; font-weight: 800; letter-spacing: .2em; }
 .auth-card h1 { margin: 0; font-size: 32px; letter-spacing: -.045em; }
+.auth-card .auth-card__login-title { margin-bottom: 27px; font-size: 38px; font-weight: 700; }
 .auth-card__lead { margin: 10px 0 27px; color: #6b8078; font-size: 13px; line-height: 1.7; }
 .auth-form { display: grid; gap: 16px; }
 .auth-form label { display: grid; gap: 7px; color: #456258; font-size: 11px; font-weight: 700; }
@@ -65,4 +66,8 @@
   .auth-page { padding-top: 108px; }
   .auth-card { padding: 25px 20px; border-radius: 21px; }
   .guest-login-hint { top: 80px; }
+}
+
+@media (min-width: 640px) {
+  .auth-card .auth-card__login-title { font-size: 48px; }
 }

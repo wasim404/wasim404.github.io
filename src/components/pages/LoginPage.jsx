@@ -55,9 +55,7 @@ function LoginPage() {
   return (
     <main className="auth-page">
       <section className="auth-card">
-        <p className="auth-card__eyebrow">WELCOME BACK</p>
-        <h1>继续你的节奏</h1>
-        <p className="auth-card__lead">登录后，你的账户将成为未来跨设备同步的身份基础。</p>
+        <h1 className="auth-card__login-title">登录</h1>
         <form className="auth-form" onSubmit={handleSubmit}>
           <label>用户名或邮箱<input type="text" autoComplete="username" required value={form.login} onChange={(event) => setForm({ ...form, login: event.target.value })} /></label>
           <label>密码<input type="password" autoComplete="current-password" required value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} /></label>
