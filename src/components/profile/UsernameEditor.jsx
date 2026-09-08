@@ -58,7 +58,7 @@ export default function UsernameEditor({ profile, onUpdated }) {
   }
 
   return (
-    <section className="profile-section rounded-[22px] border border-[#384c7d]/10 bg-white/65 p-5 sm:p-6">
+    <section className="profile-row profile-identity-row">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h3 className="m-0 text-sm font-bold text-[#33415f]">用户名</h3>

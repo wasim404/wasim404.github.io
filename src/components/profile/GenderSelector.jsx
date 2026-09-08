@@ -3,7 +3,7 @@ import { GENDER_OPTIONS, genderLabel } from './profileConstants'
 export default function GenderSelector({ gender, selectedGender, onSelect, onRequestConfirm, error }) {
   if (gender) {
     return (
-      <section className="profile-section rounded-[22px] border border-[#384c7d]/10 bg-white/65 p-5 sm:p-6">
+      <section className="profile-row profile-identity-row">
         <h3 className="m-0 text-sm font-bold text-[#33415f]">性别</h3>
         <p className="mt-2 text-base font-bold text-[#27334e]">{genderLabel(gender)}</p>
         <p className="profile-muted mt-2 text-xs text-[#7a849d]">设置后不可自行修改</p>
@@ -12,7 +12,7 @@ export default function GenderSelector({ gender, selectedGender, onSelect, onReq
   }
 
   return (
-    <fieldset className="profile-section rounded-[22px] border border-[#384c7d]/10 bg-white/65 p-5 sm:p-6">
+    <fieldset className="profile-row profile-gender-row">
       <legend className="text-sm font-bold text-[#33415f]">性别</legend>
       <p className="profile-muted mt-2 text-xs leading-5 text-[#7a849d]">仅可设置一次，确认后无法自行修改。</p>
       <div className="mt-4 grid grid-cols-2 gap-2" role="radiogroup" aria-label="选择性别">
