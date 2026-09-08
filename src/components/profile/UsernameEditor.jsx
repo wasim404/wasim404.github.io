@@ -59,8 +59,8 @@ export default function UsernameEditor({ profile, onUpdated }) {
 
   return (
     <section className="profile-row profile-identity-row">
-      <div className="flex items-center justify-between gap-4">
-        <div>
+      <div className="profile-username-summary">
+        <div className="min-w-0">
           <h3 className="m-0 text-sm font-bold text-[#33415f]">用户名</h3>
           {!isEditing && <p className="mt-2 text-base font-bold text-[#27334e]">{profile.username}</p>}
         </div>

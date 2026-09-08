@@ -88,6 +88,18 @@
   display: block;
 }
 
+.profile-username-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+}
+
+.profile-username-summary > button {
+  grid-column: 2;
+  justify-self: center;
+}
+
 .profile-gender-row {
   display: block;
 }
@@ -211,6 +223,15 @@ html[data-theme='dark'] .profile-muted {
   .profile-field {
     grid-template-columns: 1fr;
     gap: 12px;
+  }
+
+  .profile-username-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-username-summary > button {
+    grid-column: 1;
+    margin-top: 16px;
   }
 }
 
